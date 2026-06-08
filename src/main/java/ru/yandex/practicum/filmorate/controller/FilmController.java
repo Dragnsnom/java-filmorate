@@ -22,25 +22,25 @@ public class FilmController {
 
     @GetMapping
     public List<Film> getAllFilms() {
-        log.info("GET /api/v1/films - получение всех фильмов");
+        log.info("GET /films - получение всех фильмов");
         List<Film> films = filmService.getAllFilms();
-        log.debug("GET /api/v1/films - найдено фильмов: {}", films.size());
+        log.debug("GET /films - найдено фильмов: {}", films.size());
         return films;
     }
 
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) {
-        log.info("POST /api/v1/films - добавление фильма: {}", film.getName());
+        log.info("POST /films - добавление фильма: {}", film.getName());
         Film createdFilm = filmService.createFilm(film);
-        log.info("POST /api/v1/films - фильм добавлен с id: {}", createdFilm.getId());
+        log.info("POST /films - фильм добавлен с id: {}", createdFilm.getId());
         return createdFilm;
     }
 
-    @PutMapping("/{id}")
-    public Film updateFilm(@PathVariable Long id, @Valid @RequestBody Film film) {
-        log.info("PUT /api/v1/films/{} - обновление фильма: {}", id, film.getName());
+    @PutMapping
+    public Film updateFilm(@Valid @RequestBody Film film) {
+        log.info("PUT /films - обновление фильма: {}", film.getName());
         Film updatedFilm = filmService.updateFilm(film);
-        log.info("PUT /api/v1/films/{} - фильм обновлен", id);
+        log.info("PUT /films - фильм обновлен");
         return updatedFilm;
     }
 }

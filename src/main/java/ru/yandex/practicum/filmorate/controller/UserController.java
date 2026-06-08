@@ -22,25 +22,25 @@ public class UserController {
 
     @GetMapping
     public List<User> getAllUsers() {
-        log.info("GET /api/v1/users - получение всех пользователей");
+        log.info("GET /users - получение всех пользователей");
         List<User> users = userService.getAllUsers();
-        log.debug("GET /api/v1/users - найдено пользователей: {}", users.size());
+        log.debug("GET /users - найдено пользователей: {}", users.size());
         return users;
     }
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user) {
-        log.info("POST /api/v1/users - создание пользователя с логином: {}", user.getLogin());
+        log.info("POST /users - создание пользователя с логином: {}", user.getLogin());
         User createdUser = userService.createUser(user);
-        log.info("POST /api/v1/users - пользователь создан с id: {}", createdUser.getId());
+        log.info("POST /users - пользователь создан с id: {}", createdUser.getId());
         return createdUser;
     }
 
-    @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
-        log.info("PUT /api/v1/users/{} - обновление пользователя", id);
+    @PutMapping
+    public User updateUser(@Valid @RequestBody User user) {
+        log.info("PUT /users - обновление пользователя: id={}", user.getId());
         User updatedUser = userService.updateUser(user);
-        log.info("PUT /api/v1/users/{} - пользователь обновлен", id);
+        log.info("PUT /users - пользователь обновлен: id={}", updatedUser.getId());
         return updatedUser;
     }
 }
