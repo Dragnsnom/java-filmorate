@@ -10,7 +10,7 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/films")
+@RequestMapping("/films")
 public class FilmController {
 
     private static final Logger log = LoggerFactory.getLogger(FilmController.class);
