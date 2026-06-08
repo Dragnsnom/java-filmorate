@@ -65,7 +65,7 @@ class FilmorateApplicationTests {
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
 
 		assertFalse(violations.isEmpty());
-		assertEquals("Логин не может быть пустым", violations.iterator().next().getMessage());
+		assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
 	}
 
 	@Test
@@ -75,7 +75,7 @@ class FilmorateApplicationTests {
 
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
 		assertFalse(violations.isEmpty());
-		assertEquals("Логин не должен содержать пробелы", violations.iterator().next().getMessage());
+		assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
 	}
 
 	@Test
