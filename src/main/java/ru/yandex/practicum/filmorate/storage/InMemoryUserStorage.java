@@ -11,7 +11,7 @@ import java.util.Map;
 @Component
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
-    private int currentId = 1;
+    private long currentId = 1;
 
     @Override
     public User create(User user) {
@@ -25,7 +25,7 @@ public class InMemoryUserStorage implements UserStorage {
         if (!exists(user.getId())) {
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
-        users.put((long) user.getId(), user);
+        users.put(user.getId(), user);
         return user;
     }
 
@@ -34,7 +34,7 @@ public class InMemoryUserStorage implements UserStorage {
         return new ArrayList<>(users.values());
     }
 
-    private boolean exists(int id) {
+    private boolean exists(long id) {
         return users.containsKey(id);
     }
 }

@@ -1,15 +1,15 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.annotation.ValidDate;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDate;
 
 @Data
 public class User {
 
-    private int id;
+    private long id;
 
     @NotBlank(message = "Email не может быть пустым")
     @Email(message = "Email должен быть корректным")
@@ -19,7 +19,23 @@ public class User {
     private String login;
     private String name;
 
-    @NotBlank(message = "Дата рождения не может быть пустым")
-    @ValidDate
-    private String birthday;
+    @NotNull
+    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    private LocalDate birthday;
+
+
+    public void setName(String name) {
+        if (!StringUtils.hasText(name)) {
+            this.name = this.login;
+        } else {
+            this.name = name;
+        }
+    }
+
+    public void setLogin(String login) {
+        this.login = login;
+        if (!StringUtils.hasText(this.name)) {
+            this.name = login;
+        }
+    }
 }

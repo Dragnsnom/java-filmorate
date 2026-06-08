@@ -12,12 +12,12 @@ import java.util.Map;
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
-    private int currentId = 1;
+    private long currentId = 1;
 
     @Override
     public Film create(Film film) {
         film.setId(currentId++);
-        films.put((long) film.getId(), film);
+        films.put(film.getId(), film);
         return film;
     }
 
@@ -26,7 +26,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         if (!exists(film.getId())) {
             throw new NotFoundException("фильм с id=" + film.getId() + " не найден");
         }
-        films.put((long) film.getId(), film);
+        films.put(film.getId(), film);
         return film;
     }
 
@@ -35,7 +35,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return new ArrayList<>(films.values());
     }
 
-    private boolean exists(int id) {
+    private boolean exists(Long id) {
         return films.containsKey(id);
     }
 }

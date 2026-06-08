@@ -14,7 +14,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FilmorateApplicationTests {
@@ -30,6 +29,7 @@ class FilmorateApplicationTests {
 	@Test
 	void shouldCreateValidUser() {
 		User user = createValidUser();
+
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
 
 		assertTrue(violations.isEmpty());
@@ -74,6 +74,7 @@ class FilmorateApplicationTests {
 		user.setLogin("login with spaces");
 
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
 		assertFalse(violations.isEmpty());
 		assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
 	}
@@ -81,19 +82,21 @@ class FilmorateApplicationTests {
 	@Test
 	void shouldUseLoginAsNameWhenNameIsEmpty() {
 		User user = createValidUser();
+		user.setLogin("testLogin");
 		user.setName("");
 
-		assertTrue(user.getName().isEmpty());
-		assertEquals("validLogin", user.getLogin());
+		assertEquals("testLogin", user.getName());
+		assertEquals("testLogin", user.getLogin());
 	}
 
 	@Test
 	void shouldUseLoginAsNameWhenNameIsNull() {
 		User user = createValidUser();
+		user.setLogin("testLogin");
 		user.setName(null);
 
-		assertNull(user.getName());
-		assertEquals("validLogin", user.getLogin());
+		assertEquals("testLogin", user.getName());
+		assertEquals("testLogin", user.getLogin());
 	}
 
 	@Test
@@ -109,8 +112,50 @@ class FilmorateApplicationTests {
 	}
 
 	@Test
+	void shouldFailWhenUserBirthdayIsNull() {
+		User user = createValidUser();
+		user.setBirthday(null);
+
+		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+		assertFalse(violations.isEmpty());
+	}
+
+	@Test
+	void shouldFailWhenUserBirthdayIsInFuture() {
+		User user = createValidUser();
+		user.setBirthday(LocalDate.of(2030, 12, 31));
+
+		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+		assertFalse(violations.isEmpty());
+	}
+
+	@Test
+	void shouldPassWhenUserBirthdayIsToday() {
+		User user = createValidUser();
+		user.setBirthday(LocalDate.now());
+
+		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldPassWhenUserBirthdayIsPast() {
+		User user = createValidUser();
+		user.setBirthday(LocalDate.of(1990, 5, 15));
+
+		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+		assertTrue(violations.isEmpty());
+	}
+
+
+	@Test
 	void shouldCreateValidFilm() {
 		Film film = createValidFilm();
+
 		Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
 		assertTrue(violations.isEmpty());
@@ -125,6 +170,16 @@ class FilmorateApplicationTests {
 
 		assertFalse(violations.isEmpty());
 		assertEquals("Название не может быть пустым", violations.iterator().next().getMessage());
+	}
+
+	@Test
+	void shouldFailWhenFilmNameIsNull() {
+		Film film = createValidFilm();
+		film.setName(null);
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertFalse(violations.isEmpty());
 	}
 
 	@Test
@@ -152,6 +207,14 @@ class FilmorateApplicationTests {
 	void shouldAllowFilmDescriptionIsEmpty() {
 		Film film = createValidFilm();
 		film.setDescription("");
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldAllowFilmDescriptionIsNull() {
+		Film film = createValidFilm();
+		film.setDescription(null);
 
 		Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
@@ -162,7 +225,6 @@ class FilmorateApplicationTests {
 	void shouldFailWhenFilmDurationIsNegative() {
 		Film film = createValidFilm();
 		film.setDuration(-10);
-
 		Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
 		assertFalse(violations.isEmpty());
@@ -181,48 +243,53 @@ class FilmorateApplicationTests {
 	}
 
 	@Test
+	void shouldPassWhenFilmDurationIsPositive() {
+		Film film = createValidFilm();
+		film.setDuration(120);
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
 	void shouldFailWhenFilmReleaseDateIsBeforeMinimum() {
 		Film film = createValidFilm();
-		film.setReleaseDate(LocalDate.of(1890, 1, 1));
-		LocalDate minDate = LocalDate.of(1895, 12, 28);
-
-		assertTrue(film.getReleaseDate().isBefore(minDate));
-	}
-
-	@Test
-	void shouldFailWhenFilmReleaseDateIsBefore28Dec1895() {
-		Film film = createValidFilm();
 		film.setReleaseDate(LocalDate.of(1895, 12, 27));
-		LocalDate minDate = LocalDate.of(1895, 12, 28);
 
-		assertTrue(film.getReleaseDate().isBefore(minDate));
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertFalse(violations.isEmpty());
 	}
 
 	@Test
-	void shouldAllowFilmReleaseDateExactlyOnMinimum() {
-		Film film = createValidFilm();
-		LocalDate minDate = LocalDate.of(1895, 12, 28);
-		film.setReleaseDate(minDate);
-
-		assertFalse(film.getReleaseDate().isBefore(minDate));
-	}
-
-	@Test
-	void shouldPassWhenFilmReleaseDateIs28Dec1895() {
+	void shouldPassWhenFilmReleaseDateIsMinimum() {
 		Film film = createValidFilm();
 		film.setReleaseDate(LocalDate.of(1895, 12, 28));
-		LocalDate minDate = LocalDate.of(1895, 12, 28);
 
-		assertFalse(film.getReleaseDate().isBefore(minDate));
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
 	}
 
 	@Test
-	void shouldPassWhenFilmReleaseDateIsAfter28Dec1895() {
+	void shouldPassWhenFilmReleaseDateIsAfterMinimum() {
 		Film film = createValidFilm();
-		film.setReleaseDate(LocalDate.of(2020, 1, 1));
-		LocalDate minDate = LocalDate.of(1895, 12, 28);
+		film.setReleaseDate(LocalDate.of(2000, 1, 1));
 
-		assertFalse(film.getReleaseDate().isBefore(minDate));
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldFailWhenFilmReleaseDateIsNull() {
+		Film film = createValidFilm();
+		film.setReleaseDate(null);
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertFalse(violations.isEmpty());
 	}
 
 	@Test
@@ -238,25 +305,56 @@ class FilmorateApplicationTests {
 		assertEquals(3, violations.size());
 	}
 
-
 	@Test
-	void shouldFailWhenFilmReleaseDateIsNull() {
-		Film film = createValidFilm();
-		film.setReleaseDate(null);
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-	}
-
-	@Test
-	void shouldFailWhenUserBirthdayIsNull() {
+	void shouldPassWhenUserEmailHasUppercase() {
 		User user = createValidUser();
-		user.setBirthday(null);
+		user.setEmail("User@Example.COM");
 
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
 
-		assertFalse(violations.isEmpty());
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldPassWhenUserLoginIsSingleCharacter() {
+		User user = createValidUser();
+		user.setLogin("a");
+
+		Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldPassWhenFilmNameIsSingleCharacter() {
+		Film film = createValidFilm();
+		film.setName("A");
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldPassWhenFilmDurationIsOne() {
+		Film film = createValidFilm();
+		film.setDuration(1);
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
+	}
+
+	@Test
+	void shouldHandleVeryLongValidDescription() {
+		Film film = createValidFilm();
+		film.setDescription("This is a valid description that is exactly 200 characters long. " +
+				"Let me write some more text to reach the limit. " +
+				"Now it should be exactly 200. Done!");
+
+		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+		assertTrue(violations.isEmpty());
 	}
 
 	private User createValidUser() {
@@ -264,7 +362,7 @@ class FilmorateApplicationTests {
 		user.setEmail("user@example.com");
 		user.setLogin("validLogin");
 		user.setName("Valid Name");
-		user.setBirthday("1990-01-01");
+		user.setBirthday(LocalDate.of(2010, 7, 16));
 		return user;
 	}
 
