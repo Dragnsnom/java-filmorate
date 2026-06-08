@@ -27,24 +27,6 @@ class FilmorateApplicationTests {
 		validator = factory.getValidator();
 	}
 
-	private User createValidUser() {
-		User user = new User();
-		user.setEmail("user@example.com");
-		user.setLogin("validLogin");
-		user.setName("Valid Name");
-		user.setBirthday("1990-01-01");
-		return user;
-	}
-
-	private Film createValidFilm() {
-		Film film = new Film();
-		film.setName("Inception");
-		film.setDescription("A mind-bending thriller");
-		film.setReleaseDate(LocalDate.of(2010, 7, 16));
-		film.setDuration(148);
-		return film;
-	}
-
 	@Test
 	void shouldCreateValidUser() {
 		User user = createValidUser();
@@ -275,5 +257,23 @@ class FilmorateApplicationTests {
 		Set<ConstraintViolation<User>> violations = validator.validate(user);
 
 		assertFalse(violations.isEmpty());
+	}
+
+	private User createValidUser() {
+		User user = new User();
+		user.setEmail("user@example.com");
+		user.setLogin("validLogin");
+		user.setName("Valid Name");
+		user.setBirthday("1990-01-01");
+		return user;
+	}
+
+	private Film createValidFilm() {
+		Film film = new Film();
+		film.setName("Inception");
+		film.setDescription("A mind-bending thriller");
+		film.setReleaseDate(LocalDate.of(2010, 7, 16));
+		film.setDuration(148);
+		return film;
 	}
 }

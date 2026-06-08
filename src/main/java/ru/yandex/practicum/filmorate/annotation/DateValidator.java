@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate.annotation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -12,7 +14,7 @@ public class DateValidator implements ConstraintValidator<ValidDate, String> {
 
     @Override
     public boolean isValid(String date, ConstraintValidatorContext context) {
-        if (date == null || date.isBlank()) {
+        if (!StringUtils.hasText(date)) {
             return true;
         }
         try {

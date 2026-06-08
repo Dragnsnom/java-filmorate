@@ -22,7 +22,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        if (!users.containsKey(user.getId())) {
+        if (!exists(user.getId())) {
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
         users.put((long) user.getId(), user);
@@ -32,5 +32,9 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getAll() {
         return new ArrayList<>(users.values());
+    }
+
+    private boolean exists(int id) {
+        return users.containsKey(id);
     }
 }
