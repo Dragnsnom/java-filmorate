@@ -187,7 +187,6 @@ class FilmorateApplicationTests {
 		User user1 = userService.createUser(testUser1);
 
 		Film film1 = filmService.createFilm(testFilm1);
-		Film film2 = filmService.createFilm(testFilm2);
 
 		filmService.addLike(film1.getId(), user1.getId());
 
