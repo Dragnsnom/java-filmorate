@@ -2,376 +2,322 @@ package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FilmorateApplicationTests {
 
-	private Validator validator;
+	@Autowired
+	private UserService userService;
+
+	@Autowired
+	private FilmService filmService;
+
+	private User testUser1;
+	private User testUser2;
+	private User testUser3;
+	private Film testFilm1;
+	private Film testFilm2;
+	private Film testFilm3;
 
 	@BeforeEach
 	void setUp() {
-		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-		validator = factory.getValidator();
+		testUser1 = new User();
+		testUser1.setEmail("user1@example.com");
+		testUser1.setLogin("user1");
+		testUser1.setName("User One");
+		testUser1.setBirthday(LocalDate.of(1990, 1, 1));
+
+		testUser2 = new User();
+		testUser2.setEmail("user2@example.com");
+		testUser2.setLogin("user2");
+		testUser2.setName("User Two");
+		testUser2.setBirthday(LocalDate.of(1991, 2, 2));
+
+		testUser3 = new User();
+		testUser3.setEmail("user3@example.com");
+		testUser3.setLogin("user3");
+		testUser3.setName("User Three");
+		testUser3.setBirthday(LocalDate.of(1992, 3, 3));
+
+		testFilm1 = new Film();
+		testFilm1.setName("Film One");
+		testFilm1.setDescription("Description One");
+		testFilm1.setReleaseDate(LocalDate.of(2020, 1, 1));
+		testFilm1.setDuration(120);
+
+		testFilm2 = new Film();
+		testFilm2.setName("Film Two");
+		testFilm2.setDescription("Description Two");
+		testFilm2.setReleaseDate(LocalDate.of(2021, 2, 2));
+		testFilm2.setDuration(130);
+
+		testFilm3 = new Film();
+		testFilm3.setName("Film Three");
+		testFilm3.setDescription("Description Three");
+		testFilm3.setReleaseDate(LocalDate.of(2022, 3, 3));
+		testFilm3.setDuration(140);
 	}
 
 	@Test
-	void shouldCreateValidUser() {
-		User user = createValidUser();
+	void shouldAddFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
 
-		assertTrue(violations.isEmpty());
+		List<User> friends = userService.getAllFriends(createdUser1.getId());
+		assertEquals(1, friends.size());
+		assertEquals(createdUser2.getId(), friends.getFirst().getId());
 	}
 
 	@Test
-	void shouldFailWhenUserEmailIsBlank() {
-		User user = createValidUser();
-		user.setEmail("");
+	void shouldDeleteFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+		userService.deleteFriend(createdUser1.getId(), createdUser2.getId());
 
-		assertFalse(violations.isEmpty());
-		assertEquals("Email не может быть пустым", violations.iterator().next().getMessage());
+		List<User> friends = userService.getAllFriends(createdUser1.getId());
+		assertTrue(friends.isEmpty());
 	}
 
 	@Test
-	void shouldFailWhenUserEmailIsInvalid() {
-		User user = createValidUser();
-		user.setEmail("invalid-email");
+	void shouldGetAllFriends() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+		User createdUser3 = userService.createUser(testUser3);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+		userService.addFriend(createdUser1.getId(), createdUser3.getId());
 
-		assertFalse(violations.isEmpty());
-		assertEquals("Email должен быть корректным", violations.iterator().next().getMessage());
+		List<User> friends = userService.getAllFriends(createdUser1.getId());
+		assertEquals(2, friends.size());
 	}
 
 	@Test
-	void shouldFailWhenUserLoginIsBlank() {
-		User user = createValidUser();
-		user.setLogin("");
+	void shouldGetCommonFriends() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+		User createdUser3 = userService.createUser(testUser3);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		userService.addFriend(createdUser1.getId(), createdUser3.getId());
+		userService.addFriend(createdUser2.getId(), createdUser3.getId());
 
-		assertFalse(violations.isEmpty());
-		assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
+		List<User> commonFriends = userService.getCommonFriends(createdUser1.getId(), createdUser2.getId());
+		assertEquals(1, commonFriends.size());
+		assertEquals(createdUser3.getId(), commonFriends.getFirst().getId());
 	}
 
 	@Test
-	void shouldFailWhenUserLoginContainsSpaces() {
-		User user = createValidUser();
-		user.setLogin("login with spaces");
+	void shouldGetEmptyCommonFriends() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+		User createdUser3 = userService.createUser(testUser3);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		userService.addFriend(createdUser1.getId(), createdUser3.getId());
 
-		assertFalse(violations.isEmpty());
-		assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
+		List<User> commonFriends = userService.getCommonFriends(createdUser1.getId(), createdUser2.getId());
+		assertTrue(commonFriends.isEmpty());
 	}
 
 	@Test
-	void shouldUseLoginAsNameWhenNameIsEmpty() {
-		User user = createValidUser();
-		user.setLogin("testLogin");
-		user.setName("");
+	void shouldAddLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		assertEquals("testLogin", user.getName());
-		assertEquals("testLogin", user.getLogin());
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+
+		Film film = filmService.getFilm(createdFilm.getId());
+		assertEquals(1, film.getLikes().size());
+		assertTrue(film.getLikes().contains(createdUser.getId()));
 	}
 
 	@Test
-	void shouldUseLoginAsNameWhenNameIsNull() {
-		User user = createValidUser();
-		user.setLogin("testLogin");
-		user.setName(null);
+	void shouldRemoveLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		assertEquals("testLogin", user.getName());
-		assertEquals("testLogin", user.getLogin());
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+		filmService.removeLike(createdFilm.getId(), createdUser.getId());
+
+		Film film = filmService.getFilm(createdFilm.getId());
+		assertTrue(film.getLikes().isEmpty());
 	}
 
 	@Test
-	void shouldFailWithMultipleUserErrors() {
-		User user = createValidUser();
-		user.setEmail("invalid");
-		user.setLogin("login with spaces");
+	void shouldGetPopularFilmsWithCustomCount() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
+		Film film3 = filmService.createFilm(testFilm3);
 
-		assertFalse(violations.isEmpty());
-		assertEquals(2, violations.size());
+		filmService.addLike(film1.getId(), user1.getId());
+		filmService.addLike(film1.getId(), user2.getId());
+		filmService.addLike(film2.getId(), user1.getId());
+		filmService.addLike(film3.getId(), user1.getId());
+
+		List<Film> popularFilms = filmService.getPopularFilms(2L);
+		assertEquals(2, popularFilms.size());
+		assertEquals(film1.getId(), popularFilms.get(0).getId());
+		assertEquals(film2.getId(), popularFilms.get(1).getId());
 	}
 
 	@Test
-	void shouldFailWhenUserBirthdayIsNull() {
-		User user = createValidUser();
-		user.setBirthday(null);
+	void shouldGetPopularFilmsWithCountGreaterThanAvailable() {
+		User user1 = userService.createUser(testUser1);
 
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
 
-		assertFalse(violations.isEmpty());
-	}
+		filmService.addLike(film1.getId(), user1.getId());
 
-	@Test
-	void shouldFailWhenUserBirthdayIsInFuture() {
-		User user = createValidUser();
-		user.setBirthday(LocalDate.of(2030, 12, 31));
-
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
-
-		assertFalse(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenUserBirthdayIsToday() {
-		User user = createValidUser();
-		user.setBirthday(LocalDate.now());
-
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenUserBirthdayIsPast() {
-		User user = createValidUser();
-		user.setBirthday(LocalDate.of(1990, 5, 15));
-
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
-
-		assertTrue(violations.isEmpty());
+		List<Film> popularFilms = filmService.getPopularFilms(5L);
+		assertEquals(2, popularFilms.size());
 	}
 
 
 	@Test
-	void shouldCreateValidFilm() {
-		Film film = createValidFilm();
+	void shouldAddFriendAndCheckMutualFriendship() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
 
-		assertTrue(violations.isEmpty());
+		List<User> friendsOfUser1 = userService.getAllFriends(createdUser1.getId());
+		List<User> friendsOfUser2 = userService.getAllFriends(createdUser2.getId());
+
+		assertEquals(1, friendsOfUser1.size());
+		assertEquals(1, friendsOfUser2.size());
+		assertEquals(createdUser2.getId(), friendsOfUser1.getFirst().getId());
+		assertEquals(createdUser1.getId(), friendsOfUser2.getFirst().getId());
 	}
 
 	@Test
-	void shouldFailWhenFilmNameIsBlank() {
-		Film film = createValidFilm();
-		film.setName("");
+	void shouldThrowExceptionWhenDeletingNonExistentFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-		assertEquals("Название не может быть пустым", violations.iterator().next().getMessage());
+		assertThrows(NotFoundException.class, () ->
+				userService.deleteFriend(createdUser1.getId(), createdUser2.getId())
+		);
 	}
 
 	@Test
-	void shouldFailWhenFilmNameIsNull() {
-		Film film = createValidFilm();
-		film.setName(null);
+	void shouldThrowExceptionWhenAddingLikeTwice() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+		assertThrows(IllegalStateException.class, () ->
+				filmService.addLike(createdFilm.getId(), createdUser.getId())
+		);
 	}
 
 	@Test
-	void shouldFailWhenFilmDescriptionIsTooLong() {
-		Film film = createValidFilm();
-		film.setDescription("a".repeat(201));
+	void shouldThrowExceptionWhenRemovingNonExistentLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-		assertEquals("Описание не длиннее 200 символов", violations.iterator().next().getMessage());
+		assertThrows(NotFoundException.class, () ->
+				filmService.removeLike(createdFilm.getId(), createdUser.getId())
+		);
 	}
 
 	@Test
-	void shouldAllowFilmDescriptionExactlyTwoHundredChars() {
-		Film film = createValidFilm();
-		film.setDescription("a".repeat(200));
+	void shouldThrowExceptionWhenAddingFriendToNonExistentUser() {
+		User createdUser = userService.createUser(testUser1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
+		assertThrows(NotFoundException.class, () ->
+				userService.addFriend(createdUser.getId(), 999L)
+		);
 	}
 
 	@Test
-	void shouldAllowFilmDescriptionIsEmpty() {
-		Film film = createValidFilm();
-		film.setDescription("");
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-		assertTrue(violations.isEmpty());
+	void shouldThrowExceptionWhenGettingFriendsOfNonExistentUser() {
+		assertThrows(NotFoundException.class, () ->
+				userService.getAllFriends(999L)
+		);
 	}
 
 	@Test
-	void shouldAllowFilmDescriptionIsNull() {
-		Film film = createValidFilm();
-		film.setDescription(null);
+	void shouldThrowExceptionWhenGettingCommonFriendsWithNonExistentUser() {
+		User createdUser = userService.createUser(testUser1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
+		assertThrows(NotFoundException.class, () ->
+				userService.getCommonFriends(createdUser.getId(), 999L)
+		);
 	}
 
 	@Test
-	void shouldFailWhenFilmDurationIsNegative() {
-		Film film = createValidFilm();
-		film.setDuration(-10);
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+	void shouldThrowExceptionWhenAddingLikeToNonExistentFilm() {
+		User createdUser = userService.createUser(testUser1);
 
-		assertFalse(violations.isEmpty());
-		assertEquals("Продолжительность должна быть положительной", violations.iterator().next().getMessage());
+		assertThrows(NotFoundException.class, () ->
+				filmService.addLike(999L, createdUser.getId())
+		);
 	}
 
 	@Test
-	void shouldFailWhenFilmDurationIsZero() {
-		Film film = createValidFilm();
-		film.setDuration(0);
+	void shouldThrowExceptionWhenAddingLikeFromNonExistentUser() {
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-		assertEquals("Продолжительность должна быть положительной", violations.iterator().next().getMessage());
+		assertThrows(NotFoundException.class, () ->
+				filmService.addLike(createdFilm.getId(), 999L)
+		);
 	}
 
 	@Test
-	void shouldPassWhenFilmDurationIsPositive() {
-		Film film = createValidFilm();
-		film.setDuration(120);
+	void shouldHandleMultipleLikesFromDifferentUsers() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+		User user3 = userService.createUser(testUser3);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+		filmService.addLike(createdFilm.getId(), user1.getId());
+		filmService.addLike(createdFilm.getId(), user2.getId());
+		filmService.addLike(createdFilm.getId(), user3.getId());
 
-		assertTrue(violations.isEmpty());
+		Film film = filmService.getFilm(createdFilm.getId());
+		assertEquals(3, film.getLikes().size());
+		assertTrue(film.getLikes().contains(user1.getId()));
+		assertTrue(film.getLikes().contains(user2.getId()));
+		assertTrue(film.getLikes().contains(user3.getId()));
 	}
 
 	@Test
-	void shouldFailWhenFilmReleaseDateIsBeforeMinimum() {
-		Film film = createValidFilm();
-		film.setReleaseDate(LocalDate.of(1895, 12, 27));
+	void shouldHandleRemoveLikeFromFilmWithMultipleLikes() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+		Film createdFilm = filmService.createFilm(testFilm1);
 
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
+		filmService.addLike(createdFilm.getId(), user1.getId());
+		filmService.addLike(createdFilm.getId(), user2.getId());
 
-		assertFalse(violations.isEmpty());
-	}
+		filmService.removeLike(createdFilm.getId(), user1.getId());
 
-	@Test
-	void shouldPassWhenFilmReleaseDateIsMinimum() {
-		Film film = createValidFilm();
-		film.setReleaseDate(LocalDate.of(1895, 12, 28));
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenFilmReleaseDateIsAfterMinimum() {
-		Film film = createValidFilm();
-		film.setReleaseDate(LocalDate.of(2000, 1, 1));
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldFailWhenFilmReleaseDateIsNull() {
-		Film film = createValidFilm();
-		film.setReleaseDate(null);
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-	}
-
-	@Test
-	void shouldFailWithMultipleFilmErrors() {
-		Film film = createValidFilm();
-		film.setName("");
-		film.setDescription("a".repeat(201));
-		film.setDuration(-10);
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertFalse(violations.isEmpty());
-		assertEquals(3, violations.size());
-	}
-
-	@Test
-	void shouldPassWhenUserEmailHasUppercase() {
-		User user = createValidUser();
-		user.setEmail("User@Example.COM");
-
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenUserLoginIsSingleCharacter() {
-		User user = createValidUser();
-		user.setLogin("a");
-
-		Set<ConstraintViolation<User>> violations = validator.validate(user);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenFilmNameIsSingleCharacter() {
-		Film film = createValidFilm();
-		film.setName("A");
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldPassWhenFilmDurationIsOne() {
-		Film film = createValidFilm();
-		film.setDuration(1);
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	@Test
-	void shouldHandleVeryLongValidDescription() {
-		Film film = createValidFilm();
-		film.setDescription("This is a valid description that is exactly 200 characters long. " +
-				"Let me write some more text to reach the limit. " +
-				"Now it should be exactly 200. Done!");
-
-		Set<ConstraintViolation<Film>> violations = validator.validate(film);
-
-		assertTrue(violations.isEmpty());
-	}
-
-	private User createValidUser() {
-		User user = new User();
-		user.setEmail("user@example.com");
-		user.setLogin("validLogin");
-		user.setName("Valid Name");
-		user.setBirthday(LocalDate.of(2010, 7, 16));
-		return user;
-	}
-
-	private Film createValidFilm() {
-		Film film = new Film();
-		film.setName("Inception");
-		film.setDescription("A mind-bending thriller");
-		film.setReleaseDate(LocalDate.of(2010, 7, 16));
-		film.setDuration(148);
-		return film;
+		Film film = filmService.getFilm(createdFilm.getId());
+		assertEquals(1, film.getLikes().size());
+		assertTrue(film.getLikes().contains(user2.getId()));
+		assertFalse(film.getLikes().contains(user1.getId()));
 	}
 }

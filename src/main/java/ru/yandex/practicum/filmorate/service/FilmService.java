@@ -42,4 +42,8 @@ public class FilmService {
     public List<Film> getPopularFilms(Long count) {
        return filmStorage.getPopularFilms(count);
     }
+
+    public Film getFilm(Long id) {
+        return filmStorage.getFilm(id);
+    }
 }
