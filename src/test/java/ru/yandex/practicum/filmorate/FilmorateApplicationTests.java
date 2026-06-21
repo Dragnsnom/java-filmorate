@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -213,13 +214,11 @@ class FilmorateApplicationTests {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenDeletingNonExistentFriend() {
+	void shouldNotThrowExceptionWhenDeletingNonExistentFriend() {
 		User createdUser1 = userService.createUser(testUser1);
 		User createdUser2 = userService.createUser(testUser2);
 
-		assertThrows(NotFoundException.class, () ->
-				userService.deleteFriend(createdUser1.getId(), createdUser2.getId())
-		);
+		assertDoesNotThrow(() -> userService.deleteFriend(createdUser1.getId(), createdUser2.getId()));
 	}
 
 	@Test
