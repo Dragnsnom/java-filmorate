@@ -189,6 +189,7 @@ class FilmorateApplicationTests {
 		Film film1 = filmService.createFilm(testFilm1);
 
 		filmService.addLike(film1.getId(), user1.getId());
+		Film film2 = filmService.createFilm(testFilm2);
 
 		List<Film> popularFilms = filmService.getPopularFilms(5L);
 		assertEquals(2, popularFilms.size());
