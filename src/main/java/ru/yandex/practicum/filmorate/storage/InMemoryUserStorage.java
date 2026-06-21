@@ -62,11 +62,6 @@ public class InMemoryUserStorage implements UserStorage {
         User user = users.get(id);
         User friend = users.get(friendId);
 
-        if (!user.getFriends().contains(friendId)) {
-            log.warn("Пользователи {} и {} не являются друзьями", id, friendId);
-            throw new NotFoundException("Пользователи не являются друзьями");
-        }
-
         user.getFriends().removeIf(f -> f.equals(friendId));
         friend.getFriends().removeIf(f -> f.equals(id));
 
@@ -80,6 +75,7 @@ public class InMemoryUserStorage implements UserStorage {
         log.trace("Поиск пользователя по id: {}", id);
         validateUserExists(id);
         User user = users.get(id);
+
         log.debug("Найден пользователь: id={}, login={}", id, user.getLogin());
         return user;
     }
@@ -88,6 +84,7 @@ public class InMemoryUserStorage implements UserStorage {
     public List<User> getAll() {
         log.debug("Получение всех пользователей");
         List<User> allUsers = new ArrayList<>(users.values());
+
         log.debug("Найдено пользователей: {}", allUsers.size());
         return allUsers;
     }
