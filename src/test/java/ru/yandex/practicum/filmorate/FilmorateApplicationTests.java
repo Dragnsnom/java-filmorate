@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
@@ -227,7 +228,7 @@ class FilmorateApplicationTests {
 		Film createdFilm = filmService.createFilm(testFilm1);
 
 		filmService.addLike(createdFilm.getId(), createdUser.getId());
-		assertThrows(IllegalStateException.class, () ->
+		assertThrows(DuplicateLikeException.class, () ->
 				filmService.addLike(createdFilm.getId(), createdUser.getId())
 		);
 	}

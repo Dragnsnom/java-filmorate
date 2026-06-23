@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -17,6 +18,14 @@ public class FilmService {
         this.userStorage = userStorage;
     }
 
+    private User getUserOrThrow(Long userId) {
+        return userStorage.getUser(userId);
+    }
+
+    private Film getFilmOrThrow(Long filmId) {
+        return filmStorage.getFilm(filmId);
+    }
+
     public Film createFilm(Film film) {
         return filmStorage.create(film);
     }
@@ -30,13 +39,17 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
-        userStorage.getUser(userId);
-        filmStorage.addLike(filmId, userId);
+        User user = getUserOrThrow(userId);
+        Film film = getFilmOrThrow(filmId);
+
+        filmStorage.addLike(film, user);
     }
 
     public void removeLike(Long filmId, Long userId) {
-        userStorage.getUser(userId);
-        filmStorage.removeLike(filmId, userId);
+        User user = getUserOrThrow(userId);
+        Film film = getFilmOrThrow(filmId);
+
+        filmStorage.removeLike(film, user);
     }
 
     public List<Film> getPopularFilms(Long count) {
