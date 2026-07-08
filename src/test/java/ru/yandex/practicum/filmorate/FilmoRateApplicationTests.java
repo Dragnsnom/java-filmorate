@@ -122,6 +122,35 @@ class FilmoRateApplicationTests {
     }
 
     @Test
+    public void testCreateFilmWithInvalidMpaThrowsNotFoundException() {
+        Film film = new Film();
+        film.setName("Test Film Invalid MPA");
+        film.setDescription("Desc");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(999, "Unknown"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> filmStorage.create(film))
+                .isInstanceOf(ru.yandex.practicum.filmorate.exception.NotFoundException.class);
+    }
+
+    @Test
+    public void testCreateFilmWithInvalidGenreThrowsNotFoundException() {
+        Film film = new Film();
+        film.setName("Test Film Invalid Genre");
+        film.setDescription("Desc");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1, "G"));
+        LinkedHashSet<Genre> genres = new LinkedHashSet<>();
+        genres.add(new Genre(999, "Unknown"));
+        film.setGenres(genres);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> filmStorage.create(film))
+                .isInstanceOf(ru.yandex.practicum.filmorate.exception.NotFoundException.class);
+    }
+
+    @Test
     public void testUpdateFilm() {
         Film film = filmStorage.create(createFilm("Film"));
         film.setName("Updated Film Name");

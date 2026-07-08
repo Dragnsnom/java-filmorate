@@ -8,7 +8,6 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -212,7 +211,7 @@ public class FilmDbStorage implements FilmStorage {
             String sql = "SELECT COUNT(*) FROM mpa_ratings WHERE id = ?";
             Integer count = jdbcTemplate.queryForObject(sql, Integer.class, film.getMpa().getId());
             if (count == null || count == 0) {
-                throw new ValidationException("MPA рейтинг с id=" + film.getMpa().getId() + " не существует");
+                throw new NotFoundException("MPA рейтинг с id=" + film.getMpa().getId() + " не существует");
             }
         }
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
@@ -223,7 +222,7 @@ public class FilmDbStorage implements FilmStorage {
                 }
                 Integer count = jdbcTemplate.queryForObject(sql, Integer.class, genre.getId());
                 if (count == null || count == 0) {
-                    throw new ValidationException("Жанр с id=" + genre.getId() + " не существует");
+                    throw new NotFoundException("Жанр с id=" + genre.getId() + " не существует");
                 }
             }
         }
