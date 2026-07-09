@@ -93,9 +93,7 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT f.*, m.name AS mpa_name FROM films f " +
                 "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
-        for (Film film : films) {
-            loadFilmDetails(film);
-        }
+        loadFilmDetails(films);
         return films;
     }
 
@@ -153,9 +151,7 @@ public class FilmDbStorage implements FilmStorage {
                 "ORDER BY like_count DESC, f.id ASC " +
                 "LIMIT ?";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
-        for (Film film : films) {
-            loadFilmDetails(film);
-        }
+        loadFilmDetails(films);
         return films;
     }
 
@@ -177,19 +173,49 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void loadFilmDetails(Film film) {
-        String genresSql = "SELECT g.* FROM genres g " +
-                "INNER JOIN film_genres fg ON g.id = fg.genre_id " +
-                "WHERE fg.film_id = ? " +
-                "ORDER BY g.id";
-        List<Genre> genres = jdbcTemplate.query(genresSql, (rs, rowNum) -> new Genre(
-                rs.getInt("id"),
-                rs.getString("name")
-        ), film.getId());
-        film.setGenres(new LinkedHashSet<>(genres));
+        loadFilmDetails(List.of(film));
+    }
 
-        String likesSql = "SELECT user_id FROM film_likes WHERE film_id = ?";
-        List<Long> likes = jdbcTemplate.queryForList(likesSql, Long.class, film.getId());
-        film.setLikes(new HashSet<>(likes));
+    private void loadFilmDetails(List<Film> films) {
+        if (films == null || films.isEmpty()) {
+            return;
+        }
+
+        for (Film film : films) {
+            film.setGenres(new LinkedHashSet<>());
+            film.setLikes(new HashSet<>());
+        }
+
+        List<Long> filmIds = films.stream().map(Film::getId).toList();
+        String inPlaceholders = filmIds.stream().map(id -> "?").collect(Collectors.joining(","));
+
+        String genresSql = "SELECT fg.film_id, g.id AS genre_id, g.name AS genre_name FROM genres g " +
+                "INNER JOIN film_genres fg ON g.id = fg.genre_id " +
+                "WHERE fg.film_id IN (" + inPlaceholders + ") " +
+                "ORDER BY g.id";
+
+        Object[] args = filmIds.toArray();
+
+        java.util.Map<Long, Film> filmMap = films.stream()
+                .collect(Collectors.toMap(Film::getId, f -> f));
+
+        jdbcTemplate.query(genresSql, rs -> {
+            long filmId = rs.getLong("film_id");
+            Film film = filmMap.get(filmId);
+            if (film != null) {
+                Genre genre = new Genre(rs.getInt("genre_id"), rs.getString("genre_name"));
+                film.getGenres().add(genre);
+            }
+        }, args);
+
+        String likesSql = "SELECT film_id, user_id FROM film_likes WHERE film_id IN (" + inPlaceholders + ")";
+        jdbcTemplate.query(likesSql, rs -> {
+            long filmId = rs.getLong("film_id");
+            Film film = filmMap.get(filmId);
+            if (film != null) {
+                film.getLikes().add(rs.getLong("user_id"));
+            }
+        }, args);
     }
 
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
@@ -215,14 +241,20 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            String sql = "SELECT COUNT(*) FROM genres WHERE id = ?";
-            for (Genre genre : film.getGenres()) {
-                if (genre == null) {
-                    continue;
-                }
-                Integer count = jdbcTemplate.queryForObject(sql, Integer.class, genre.getId());
-                if (count == null || count == 0) {
-                    throw new NotFoundException("Жанр с id=" + genre.getId() + " не существует");
+            List<Integer> genreIds = film.getGenres().stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(Genre::getId)
+                    .distinct()
+                    .toList();
+
+            if (!genreIds.isEmpty()) {
+                String placeholders = genreIds.stream().map(id -> "?").collect(Collectors.joining(","));
+                String sql = "SELECT id FROM genres WHERE id IN (" + placeholders + ")";
+                List<Integer> existingIds = jdbcTemplate.queryForList(sql, Integer.class, genreIds.toArray());
+                for (Integer id : genreIds) {
+                    if (!existingIds.contains(id)) {
+                        throw new NotFoundException("Жанр с id=" + id + " не существует");
+                    }
                 }
             }
         }

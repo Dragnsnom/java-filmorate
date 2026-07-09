@@ -51,7 +51,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User update(User user) {
         log.debug("Обновление пользователя в БД: id={}, login={}", user.getId(), user.getLogin());
-        getUser(user.getId()); // Бросит исключение, если не найден
+        checkUserExists(user.getId());
 
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
         jdbcTemplate.update(sql,
@@ -68,8 +68,8 @@ public class UserDbStorage implements UserStorage {
     @Override
     public void addFriend(Long id, Long friendId) {
         log.debug("Добавление друга в БД: userId={}, friendId={}", id, friendId);
-        getUser(id);
-        getUser(friendId);
+        checkUserExists(id);
+        checkUserExists(friendId);
 
         String sql = "MERGE INTO friends (user_id, friend_id) KEY (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, id, friendId);
@@ -79,8 +79,8 @@ public class UserDbStorage implements UserStorage {
     @Override
     public void deleteFriend(Long id, Long friendId) {
         log.debug("Удаление друга из БД: userId={}, friendId={}", id, friendId);
-        getUser(id);
-        getUser(friendId);
+        checkUserExists(id);
+        checkUserExists(friendId);
 
         String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, id, friendId);
@@ -108,7 +108,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getAllFriends(Long id) {
         log.debug("Получение списка друзей из БД для пользователя: id={}", id);
-        getUser(id);
+        checkUserExists(id);
 
         String sql = "SELECT u.* FROM users u INNER JOIN friends f ON u.id = f.friend_id WHERE f.user_id = ?";
         List<User> friends = jdbcTemplate.query(sql, this::mapRowToUser, id);
@@ -121,8 +121,8 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getCommonFriends(Long id, Long otherId) {
         log.debug("Поиск общих друзей из БД: userId={}, otherId={}", id, otherId);
-        getUser(id);
-        getUser(otherId);
+        checkUserExists(id);
+        checkUserExists(otherId);
 
         String sql = "SELECT u.* FROM users u " +
                 "INNER JOIN friends f1 ON u.id = f1.friend_id " +
@@ -159,5 +159,13 @@ public class UserDbStorage implements UserStorage {
     private List<Long> getFriendIds(long userId) {
         String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
         return jdbcTemplate.queryForList(sql, Long.class, userId);
+    }
+
+    private void checkUserExists(Long id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Пользователь с id=" + id + " не найден");
+        }
     }
 }
