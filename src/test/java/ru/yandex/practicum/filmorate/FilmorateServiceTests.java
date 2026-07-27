@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
@@ -22,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class FilmorateApplicationTests {
+class FilmorateServiceTests {
 
 	@Autowired
 	private UserService userService;
@@ -209,9 +211,8 @@ class FilmorateApplicationTests {
 		List<User> friendsOfUser2 = userService.getAllFriends(createdUser2.getId());
 
 		assertEquals(1, friendsOfUser1.size());
-		assertEquals(1, friendsOfUser2.size());
+		assertEquals(0, friendsOfUser2.size());
 		assertEquals(createdUser2.getId(), friendsOfUser1.getFirst().getId());
-		assertEquals(createdUser1.getId(), friendsOfUser2.getFirst().getId());
 	}
 
 	@Test

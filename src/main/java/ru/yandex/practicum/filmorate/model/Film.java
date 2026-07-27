@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.annotation.ValidReleaseDate;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
@@ -16,6 +17,8 @@ public class Film {
 
     private Long id;
     private Set<Long> likes = new HashSet<>();
+    private Mpa mpa;
+    private Set<Genre> genres = new LinkedHashSet<>();
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
