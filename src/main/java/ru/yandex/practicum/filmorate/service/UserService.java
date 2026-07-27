@@ -10,7 +10,7 @@ import java.util.List;
 public class UserService {
     private final UserStorage userStorage;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 

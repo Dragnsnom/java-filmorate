@@ -13,7 +13,9 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(
+            @org.springframework.beans.factory.annotation.Qualifier("filmDbStorage") FilmStorage filmStorage,
+            @org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
     }

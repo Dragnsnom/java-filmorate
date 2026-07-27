@@ -44,14 +44,11 @@ public class InMemoryUserStorage implements UserStorage {
         validateUsersExist(id, friendId);
 
         User user = users.get(id);
-        User friend = users.get(friendId);
 
         user.getFriends().add(friendId);
-        friend.getFriends().add(id);
 
         log.info("Дружба добавлена: userId={}, friendId={}", id, friendId);
         log.debug("У пользователя {} теперь {} друзей", id, user.getFriends().size());
-        log.debug("У пользователя {} теперь {} друзей", friendId, friend.getFriends().size());
     }
 
     @Override
@@ -60,14 +57,11 @@ public class InMemoryUserStorage implements UserStorage {
         validateUsersExist(id, friendId);
 
         User user = users.get(id);
-        User friend = users.get(friendId);
 
-        user.getFriends().removeIf(f -> f.equals(friendId));
-        friend.getFriends().removeIf(f -> f.equals(id));
+        user.getFriends().remove(friendId);
 
         log.info("Дружба удалена: userId={}, friendId={}", id, friendId);
         log.debug("У пользователя {} теперь {} друзей", id, user.getFriends().size());
-        log.debug("У пользователя {} теперь {} друзей", friendId, friend.getFriends().size());
     }
 
     @Override
