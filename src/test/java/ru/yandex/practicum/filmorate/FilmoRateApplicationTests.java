@@ -206,7 +206,7 @@ class FilmoRateApplicationTests {
         filmStorage.addLike(film2, user3);
 
         List<Film> common = filmStorage.getCommonFilms(user1.getId(), user2.getId());
-        
+
         assertThat(common).hasSize(2);
         assertThat(common.get(0).getId()).isEqualTo(film2.getId());
         assertThat(common.get(1).getId()).isEqualTo(film1.getId());
