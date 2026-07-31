@@ -321,4 +321,30 @@ class FilmorateServiceTests {
 		assertTrue(film.getLikes().contains(user2.getId()));
 		assertFalse(film.getLikes().contains(user1.getId()));
 	}
+
+	@Test
+	void shouldGetRecommendations() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+		User user3 = userService.createUser(testUser3);
+
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
+		Film film3 = filmService.createFilm(testFilm3);
+
+		filmService.addLike(film1.getId(), user1.getId());
+		filmService.addLike(film2.getId(), user1.getId());
+		filmService.addLike(film1.getId(), user2.getId());
+		filmService.addLike(film2.getId(), user2.getId());
+		filmService.addLike(film3.getId(), user2.getId());
+		filmService.addLike(film1.getId(), user3.getId());
+		filmService.addLike(film3.getId(), user3.getId());
+
+		List<Film> recommendations = userService.getRecommendations(user1.getId());
+		assertEquals(1, recommendations.size());
+		assertEquals(film3.getId(), recommendations.get(0).getId());
+
+		List<Film> recommendationsUser2 = userService.getRecommendations(user2.getId());
+		assertTrue(recommendationsUser2.isEmpty());
+	}
 }

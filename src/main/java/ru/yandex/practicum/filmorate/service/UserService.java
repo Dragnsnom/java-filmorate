@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
@@ -9,9 +11,12 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
 
-    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage, 
+                       @org.springframework.beans.factory.annotation.Qualifier("filmDbStorage") FilmStorage filmStorage) {
         this.userStorage = userStorage;
+        this.filmStorage = filmStorage;
     }
 
     public User createUser(User user) {
@@ -44,5 +49,11 @@ public class UserService {
 
     public List<User> getCommonFriends(Long id, Long otherId) {
         return userStorage.getCommonFriends(id, otherId);
+    }
+
+    public List<Film> getRecommendations(Long userId) {
+        // Проверяем, существует ли пользователь (если нет, storage выбросит исключение)
+        userStorage.getUser(userId);
+        return filmStorage.getRecommendations(userId);
     }
 }

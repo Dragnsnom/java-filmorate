@@ -155,6 +155,36 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> getRecommendations(Long userId) {
+        log.debug("Поиск рекомендаций для пользователя: id={}", userId);
+        String findSimilarUserSql = "SELECT user_id FROM film_likes " +
+                "WHERE film_id IN (SELECT film_id FROM film_likes WHERE user_id = ?) " +
+                "AND user_id != ? " +
+                "GROUP BY user_id " +
+                "ORDER BY COUNT(film_id) DESC " +
+                "LIMIT 1";
+
+        List<Long> similarUsers = jdbcTemplate.queryForList(findSimilarUserSql, Long.class, userId, userId);
+
+        if (similarUsers.isEmpty()) {
+            return List.of();
+        }
+
+        Long similarUserId = similarUsers.get(0);
+
+        String recommendedFilmsSql = "SELECT f.*, m.name AS mpa_name FROM films f " +
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
+                "INNER JOIN film_likes fl ON f.id = fl.film_id " +
+                "WHERE fl.user_id = ? " +
+                "AND f.id NOT IN (SELECT film_id FROM film_likes WHERE user_id = ?)";
+
+        List<Film> recommendations = jdbcTemplate.query(recommendedFilmsSql, this::mapRowToFilm, similarUserId, userId);
+        loadFilmDetails(recommendations);
+
+        return recommendations;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             return;

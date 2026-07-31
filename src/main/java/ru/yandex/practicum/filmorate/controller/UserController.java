@@ -78,4 +78,9 @@ public class UserController {
 
         return userService.getCommonFriends(id, otherId);
     }
+
+    @GetMapping("/{id}/recommendations")
+    public List<ru.yandex.practicum.filmorate.model.Film> getRecommendations(@PathVariable Long id) {
+        return userService.getRecommendations(id);
+    }
 }
