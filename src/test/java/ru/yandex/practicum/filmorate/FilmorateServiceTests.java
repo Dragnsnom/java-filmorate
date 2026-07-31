@@ -321,4 +321,29 @@ class FilmorateServiceTests {
 		assertTrue(film.getLikes().contains(user2.getId()));
 		assertFalse(film.getLikes().contains(user1.getId()));
 	}
+
+	@Test
+	void shouldGetCommonFilms() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
+		Film film3 = filmService.createFilm(testFilm3);
+
+		filmService.addLike(film1.getId(), user1.getId());
+		filmService.addLike(film1.getId(), user2.getId());
+
+		filmService.addLike(film2.getId(), user1.getId());
+		filmService.addLike(film2.getId(), user2.getId());
+
+		filmService.addLike(film3.getId(), user1.getId());
+
+		List<Film> common = filmService.getCommonFilms(user1.getId(), user2.getId());
+		
+		assertEquals(2, common.size());
+		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film1.getId())));
+		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film2.getId())));
+		assertFalse(common.stream().anyMatch(f -> f.getId().equals(film3.getId())));
+	}
 }

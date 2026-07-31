@@ -61,4 +61,8 @@ public class FilmService {
     public Film getFilm(Long id) {
         return filmStorage.getFilm(id);
     }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
 }
