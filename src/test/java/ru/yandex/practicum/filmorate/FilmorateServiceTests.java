@@ -340,7 +340,7 @@ class FilmorateServiceTests {
 		filmService.addLike(film3.getId(), user1.getId());
 
 		List<Film> common = filmService.getCommonFilms(user1.getId(), user2.getId());
-		
+
 		assertEquals(2, common.size());
 		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film1.getId())));
 		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film2.getId())));
