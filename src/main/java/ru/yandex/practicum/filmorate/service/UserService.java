@@ -45,4 +45,8 @@ public class UserService {
     public List<User> getCommonFriends(Long id, Long otherId) {
         return userStorage.getCommonFriends(id, otherId);
     }
+
+    public void deleteUser(Long id) {
+        userStorage.deleteUser(id);
+    }
 }

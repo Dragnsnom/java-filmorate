@@ -155,6 +155,13 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public void deleteFilm(Long id) {
+        log.debug("Удаление фильма filmId={}", id);
+        String sql = "DELETE FROM films WHERE film_id = ?";
+        
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             return;

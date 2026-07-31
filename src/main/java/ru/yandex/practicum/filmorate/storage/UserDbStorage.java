@@ -135,6 +135,20 @@ public class UserDbStorage implements UserStorage {
         return common;
     }
 
+    @Override
+    public void deleteUser(Long id) {
+        log.debug("Удаление пользователя userId={}", id);
+        String sql = "DELETE FROM users WHERE id = ?";
+        Optional<User> user = findUserById(id);
+
+        if (user.isPresent()) {
+            jdbcTemplate.update(sql, id);
+            return;
+        }
+
+        throw new NotFoundException("Пользователь с id=" + id + " не найден");
+    }
+
     public Optional<User> findUserById(long id) {
         String sql = "SELECT * FROM users WHERE id = ?";
         List<User> users = jdbcTemplate.query(sql, this::mapRowToUser, id);
@@ -155,7 +169,6 @@ public class UserDbStorage implements UserStorage {
         user.setBirthday(rs.getDate("birthday").toLocalDate());
         return user;
     }
-
     private List<Long> getFriendIds(long userId) {
         String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
         return jdbcTemplate.queryForList(sql, Long.class, userId);
