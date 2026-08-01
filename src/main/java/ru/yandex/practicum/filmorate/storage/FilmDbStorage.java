@@ -21,6 +21,7 @@ import java.sql.Types;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -158,8 +159,12 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public void deleteFilm(Long id) {
         log.debug("Удаление фильма filmId={}", id);
-        String sql = "DELETE FROM films WHERE film_id = ?";
-        
+        String sql = "DELETE FROM films WHERE id = ?";
+
+        Film film = getFilm(id);
+
+        jdbcTemplate.update(sql, id);
+        log.debug("Фильм filmId={} удален", id );
     }
 
     private void saveGenres(Film film) {

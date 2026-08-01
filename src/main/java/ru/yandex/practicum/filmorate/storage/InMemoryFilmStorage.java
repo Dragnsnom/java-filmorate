@@ -97,6 +97,13 @@ public class InMemoryFilmStorage implements FilmStorage {
         return popularFilms;
     }
 
+    @Override
+    public void deleteFilm(Long id) {
+        Film film = getFilm(id);
+        films.remove(id);
+        log.info("Фильм с id={} удален", id);
+    }
+
     private void getFilmOrThrow(Long id) {
         Optional.ofNullable(films.get(id))
                 .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
