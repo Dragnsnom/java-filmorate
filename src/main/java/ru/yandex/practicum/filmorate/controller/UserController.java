@@ -85,4 +85,9 @@ public class UserController {
             @PathVariable Long id) {
         return userService.getFeed(id);
     }
+
+    @GetMapping("/{id}/recommendations")
+    public List<ru.yandex.practicum.filmorate.model.Film> getRecommendations(@PathVariable Long id) {
+        return userService.getRecommendations(id);
+    }
 }

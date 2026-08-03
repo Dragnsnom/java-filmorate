@@ -110,6 +110,12 @@ public class InMemoryFilmStorage implements FilmStorage {
         return found;
     }
 
+    @Override
+    public List<Film> getRecommendations(Long userId) {
+        // Заглушка, так как рекомендации обычно требуют БД
+        return List.of();
+    }
+
     private void getFilmOrThrow(Long id) {
         Optional.ofNullable(films.get(id))
                 .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
