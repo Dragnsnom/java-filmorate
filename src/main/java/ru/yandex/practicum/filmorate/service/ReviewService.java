@@ -4,7 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.storage.EventStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.OperationType;
 
 import java.util.List;
 
@@ -12,21 +15,30 @@ import java.util.List;
 @Service
 public class ReviewService {
     private final ReviewStorage reviewStorage;
+    private final EventStorage eventStorage;
 
-    public ReviewService(@Qualifier("reviewDbStorage") ReviewStorage reviewStorage) {
+    public ReviewService(@Qualifier("reviewDbStorage") ReviewStorage reviewStorage,
+                         EventStorage eventStorage) {
         this.reviewStorage = reviewStorage;
+        this.eventStorage = eventStorage;
     }
 
     public Review create(Review review) {
-        return reviewStorage.create(review);
+        Review created = reviewStorage.create(review);
+        eventStorage.addEvent(created.getUserId(), EventType.REVIEW, OperationType.ADD, created.getReviewId());
+        return created;
     }
 
     public Review update(Review review) {
-        return reviewStorage.update(review);
+        Review updated = reviewStorage.update(review);
+        eventStorage.addEvent(updated.getUserId(), EventType.REVIEW, OperationType.UPDATE, updated.getReviewId());
+        return updated;
     }
 
     public void delete(Long id) {
+        Review existing = reviewStorage.getById(id);
         reviewStorage.delete(id);
+        eventStorage.addEvent(existing.getUserId(), EventType.REVIEW, OperationType.REMOVE, existing.getReviewId());
     }
 
     public Review getById(Long id) {
