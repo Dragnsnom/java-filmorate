@@ -8,6 +8,10 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
+import static ru.yandex.practicum.filmorate.model.EventType.FRIEND;
+import static ru.yandex.practicum.filmorate.model.OperationType.ADD;
+import static ru.yandex.practicum.filmorate.model.OperationType.REMOVE;
+
 @Service
 public class UserService {
     private final UserStorage userStorage;
@@ -37,14 +41,12 @@ public class UserService {
 
     public void addFriend(Long id, Long friendId) {
          userStorage.addFriend(id, friendId);
-         eventStorage.addEvent(id, ru.yandex.practicum.filmorate.model.EventType.FRIEND, 
-                               ru.yandex.practicum.filmorate.model.OperationType.ADD, friendId);
+         eventStorage.addEvent(id, FRIEND, ADD, friendId);
     }
 
     public void deleteFriend(Long id, Long friendId) {
         userStorage.deleteFriend(id, friendId);
-        eventStorage.addEvent(id, ru.yandex.practicum.filmorate.model.EventType.FRIEND,
-                              ru.yandex.practicum.filmorate.model.OperationType.REMOVE, friendId);
+        eventStorage.addEvent(id, FRIEND, REMOVE, friendId);
     }
 
     public List<User> getAllFriends(Long id) {
