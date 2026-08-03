@@ -113,6 +113,24 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.trace("Получение фильмов по пересечению \n userId: {} \n friendId: {}", userId, friendId);
+
+        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
+                "FROM films f " +
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
+                "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                "WHERE f.id IN (SELECT film_id FROM film_likes WHERE user_id = ? " +
+                "INTERSECT SELECT film_id FROM film_likes WHERE user_id = ?) " +
+                "GROUP BY f.id, m.name " +
+                "ORDER BY like_count DESC, f.id ASC";
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
+        loadFilmDetails(films);
+        return films;
+    }
+
+    @Override
     public void addLike(Film film, User user) {
         log.debug("Добавление лайка в БД: filmId={}, userId={}", film.getId(), user.getId());
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
