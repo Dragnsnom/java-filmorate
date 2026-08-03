@@ -9,6 +9,9 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
+import static ru.yandex.practicum.filmorate.model.OperationType.ADD;
+import static ru.yandex.practicum.filmorate.model.OperationType.REMOVE;
+
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
@@ -49,8 +52,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.addLike(film, user);
-        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, 
-                              ru.yandex.practicum.filmorate.model.OperationType.ADD, filmId);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, ADD, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -58,8 +60,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.removeLike(film, user);
-        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, 
-                              ru.yandex.practicum.filmorate.model.OperationType.REMOVE, filmId);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, REMOVE, filmId);
     }
 
     public List<Film> getPopularFilms(Long count) {
