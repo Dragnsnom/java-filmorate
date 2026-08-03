@@ -1,9 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.EventStorage;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
@@ -16,10 +19,13 @@ import static ru.yandex.practicum.filmorate.model.OperationType.REMOVE;
 public class UserService {
     private final UserStorage userStorage;
     private final EventStorage eventStorage;
+    private final FilmStorage filmStorage;
 
-    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage,
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
+                       @Qualifier("filmDbStorage") FilmStorage filmStorage,
                        EventStorage eventStorage) {
         this.userStorage = userStorage;
+        this.filmStorage = filmStorage;
         this.eventStorage = eventStorage;
     }
 
@@ -60,5 +66,10 @@ public class UserService {
     public List<Event> getFeed(Long id) {
         userStorage.getUser(id);
         return eventStorage.getEventsByUserId(id);
+    }
+
+    public List<Film> getRecommendations(Long userId) {
+        userStorage.getUser(userId);
+        return filmStorage.getRecommendations(userId);
     }
 }
