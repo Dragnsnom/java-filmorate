@@ -1,60 +1,82 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.EventStorage;
-import ru.yandex.practicum.filmorate.model.EventType;
-import ru.yandex.practicum.filmorate.model.OperationType;
+import ru.yandex.practicum.filmorate.service.ReviewService;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
 
 @RestController
 @RequestMapping("/reviews")
 public class ReviewController {
-    
-    private final EventStorage eventStorage;
-    private final Map<Long, Review> reviews = new HashMap<>();
-    private final AtomicLong currentId = new AtomicLong(0);
 
-    public ReviewController(EventStorage eventStorage) {
-        this.eventStorage = eventStorage;
+    private final ReviewService reviewService;
+
+    public ReviewController(ReviewService reviewService) {
+        this.reviewService = reviewService;
     }
 
     @PostMapping
-    public Review createReview(@RequestBody Review review) {
-        long id = currentId.incrementAndGet();
-        review.setReviewId(id);
-        review.setUseful(0);
-        reviews.put(id, review);
-        
-        eventStorage.addEvent(review.getUserId(), EventType.REVIEW, OperationType.ADD, id);
-        
-        return review;
+    public Review create(@Valid @RequestBody Review review) {
+        return reviewService.create(review);
     }
 
     @PutMapping
-    public Review updateReview(@RequestBody Review review) {
-        Review existing = reviews.get(review.getReviewId());
-        if (existing != null) {
-            existing.setContent(review.getContent());
-            existing.setIsPositive(review.getIsPositive());
-            review = existing;
-        } else {
-            reviews.put(review.getReviewId(), review);
-        }
-        
-        eventStorage.addEvent(review.getUserId(), EventType.REVIEW, OperationType.UPDATE, review.getReviewId());
-        
-        return review;
+    public Review update(@Valid @RequestBody Review review) {
+        return reviewService.update(review);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteReview(@PathVariable Long id) {
-        Review existing = reviews.remove(id);
-        if (existing != null) {
-            eventStorage.addEvent(existing.getUserId(), EventType.REVIEW, OperationType.REMOVE, existing.getReviewId());
-        }
+    public void delete(@PathVariable Long id) {
+        reviewService.delete(id);
+    }
+
+    @GetMapping("/{id}")
+    public Review getById(@PathVariable Long id) {
+        return reviewService.getById(id);
+    }
+
+    @GetMapping
+    public List<Review> getByFilmId(
+            @RequestParam(required = false) Long filmId,
+            @RequestParam(defaultValue = "10") int count) {
+        return reviewService.getByFilmId(filmId, count);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public Review addLike(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        return reviewService.addLike(id, userId);
+    }
+
+    @PutMapping("/{id}/dislike/{userId}")
+    public Review addDislike(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        return reviewService.addDislike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public Review removeLike(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        return reviewService.removeLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/dislike/{userId}")
+    public Review removeDislike(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        return reviewService.removeDislike(id, userId);
     }
 }

@@ -69,4 +69,13 @@ public class FilmService {
     public Film getFilm(Long id) {
         return filmStorage.getFilm(id);
     }
+
+    public List<Film> searchFilms(String query, String by) {
+        List<String> criteria = List.of(by.split(","));
+        // сейчас поддерживается только поиск по названию: режиссёров в проекте нет
+        if (criteria.contains("title")) {
+            return filmStorage.searchByTitle(query);
+        }
+        return List.of();
+    }
 }
