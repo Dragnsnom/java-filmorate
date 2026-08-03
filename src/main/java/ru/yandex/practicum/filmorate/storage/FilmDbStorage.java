@@ -156,6 +156,21 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> searchByTitle(String query) {
+        log.debug("Поиск фильмов по названию в БД: query={}", query);
+        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
+                "FROM films f " +
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
+                "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                "WHERE LOWER(f.name) LIKE LOWER(?) " +
+                "GROUP BY f.id, m.name " +
+                "ORDER BY like_count DESC, f.id ASC";
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, "%" + query + "%");
+        loadFilmDetails(films);
+        return films;
+    }
+
+    @Override
     public List<Film> getRecommendations(Long userId) {
         log.debug("Поиск рекомендаций для пользователя: id={}", userId);
         String findSimilarUserSql = "SELECT user_id FROM film_likes " +

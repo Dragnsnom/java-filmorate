@@ -21,5 +21,7 @@ public interface FilmStorage {
 
     List<Film> getPopularFilms(Long count);
 
+    List<Film> searchByTitle(String query);
+
     List<Film> getRecommendations(Long userId);
 }
