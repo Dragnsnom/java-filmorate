@@ -8,6 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.OperationType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -320,5 +323,75 @@ class FilmorateServiceTests {
 		assertEquals(1, film.getLikes().size());
 		assertTrue(film.getLikes().contains(user2.getId()));
 		assertFalse(film.getLikes().contains(user1.getId()));
+	}
+
+	@Test
+	void shouldRecordEventWhenAddingFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+
+		List<Event> feed = userService.getFeed(createdUser1.getId());
+		assertEquals(1, feed.size());
+
+		Event event = feed.getFirst();
+		assertEquals(createdUser1.getId(), event.getUserId());
+		assertEquals(EventType.FRIEND, event.getEventType());
+		assertEquals(OperationType.ADD, event.getOperation());
+		assertEquals(createdUser2.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenDeletingFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+		userService.deleteFriend(createdUser1.getId(), createdUser2.getId());
+
+		List<Event> feed = userService.getFeed(createdUser1.getId());
+		assertEquals(2, feed.size());
+
+		Event event = feed.get(1);
+		assertEquals(createdUser1.getId(), event.getUserId());
+		assertEquals(EventType.FRIEND, event.getEventType());
+		assertEquals(OperationType.REMOVE, event.getOperation());
+		assertEquals(createdUser2.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenAddingLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
+
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+
+		List<Event> feed = userService.getFeed(createdUser.getId());
+		assertEquals(1, feed.size());
+
+		Event event = feed.getFirst();
+		assertEquals(createdUser.getId(), event.getUserId());
+		assertEquals(EventType.LIKE, event.getEventType());
+		assertEquals(OperationType.ADD, event.getOperation());
+		assertEquals(createdFilm.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenRemovingLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
+
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+		filmService.removeLike(createdFilm.getId(), createdUser.getId());
+
+		List<Event> feed = userService.getFeed(createdUser.getId());
+		assertEquals(2, feed.size());
+
+		Event event = feed.get(1);
+		assertEquals(createdUser.getId(), event.getUserId());
+		assertEquals(EventType.LIKE, event.getEventType());
+		assertEquals(OperationType.REMOVE, event.getOperation());
+		assertEquals(createdFilm.getId(), event.getEntityId());
 	}
 }

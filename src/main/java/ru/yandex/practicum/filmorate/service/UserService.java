@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.EventStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
@@ -9,9 +11,12 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final EventStorage eventStorage;
 
-    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(@org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage,
+                       EventStorage eventStorage) {
         this.userStorage = userStorage;
+        this.eventStorage = eventStorage;
     }
 
     public User createUser(User user) {
@@ -32,10 +37,14 @@ public class UserService {
 
     public void addFriend(Long id, Long friendId) {
          userStorage.addFriend(id, friendId);
+         eventStorage.addEvent(id, ru.yandex.practicum.filmorate.model.EventType.FRIEND, 
+                               ru.yandex.practicum.filmorate.model.OperationType.ADD, friendId);
     }
 
     public void deleteFriend(Long id, Long friendId) {
         userStorage.deleteFriend(id, friendId);
+        eventStorage.addEvent(id, ru.yandex.practicum.filmorate.model.EventType.FRIEND,
+                              ru.yandex.practicum.filmorate.model.OperationType.REMOVE, friendId);
     }
 
     public List<User> getAllFriends(Long id) {
@@ -44,5 +53,10 @@ public class UserService {
 
     public List<User> getCommonFriends(Long id, Long otherId) {
         return userStorage.getCommonFriends(id, otherId);
+    }
+
+    public List<Event> getFeed(Long id) {
+        userStorage.getUser(id);
+        return eventStorage.getEventsByUserId(id);
     }
 }

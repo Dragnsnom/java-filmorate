@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.EventStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -12,12 +13,15 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final EventStorage eventStorage;
 
     public FilmService(
             @org.springframework.beans.factory.annotation.Qualifier("filmDbStorage") FilmStorage filmStorage,
-            @org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage) {
+            @org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage,
+            EventStorage eventStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.eventStorage = eventStorage;
     }
 
     private User getUserOrThrow(Long userId) {
@@ -45,6 +49,8 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.addLike(film, user);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, 
+                              ru.yandex.practicum.filmorate.model.OperationType.ADD, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -52,6 +58,8 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.removeLike(film, user);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, 
+                              ru.yandex.practicum.filmorate.model.OperationType.REMOVE, filmId);
     }
 
     public List<Film> getPopularFilms(Long count) {
