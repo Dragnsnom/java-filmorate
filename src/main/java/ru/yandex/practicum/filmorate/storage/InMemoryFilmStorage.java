@@ -109,6 +109,25 @@ public class InMemoryFilmStorage implements FilmStorage {
         return popularFilms;
     }
 
+    @Override
+    public List<Film> searchByTitle(String query) {
+        log.debug("Поиск фильмов по названию: query={}", query);
+
+        List<Film> found = films.values().stream()
+                .filter(film -> film.getName().toLowerCase().contains(query.toLowerCase()))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .toList();
+
+        log.debug("Найдено фильмов по запросу '{}': {}", query, found.size());
+        return found;
+    }
+
+    @Override
+    public List<Film> getRecommendations(Long userId) {
+        // Заглушка, так как рекомендации обычно требуют БД
+        return List.of();
+    }
+
     private void getFilmOrThrow(Long id) {
         Optional.ofNullable(films.get(id))
                 .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
