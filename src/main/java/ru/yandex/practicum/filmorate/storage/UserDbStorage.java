@@ -169,6 +169,7 @@ public class UserDbStorage implements UserStorage {
         user.setBirthday(rs.getDate("birthday").toLocalDate());
         return user;
     }
+
     private List<Long> getFriendIds(long userId) {
         String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
         return jdbcTemplate.queryForList(sql, Long.class, userId);
