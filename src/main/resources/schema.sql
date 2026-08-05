@@ -57,3 +57,10 @@ CREATE TABLE IF NOT EXISTS film_likes (
     CONSTRAINT fk_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS film_directors (
+    film_id BIGINT NOT NULL,
+    director_id BIGINT NOT NULL,
+    PRIMARY KEY (film_id, director_id),
+    CONSTRAINT fk_fd_film FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fd_director FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE
+);

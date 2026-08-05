@@ -15,4 +15,6 @@ public interface DirectorStorage {
     public Director updateDirector(Director director);
 
     public void deleteDirector(Long id);
+
+    boolean existsById(int id);
 }

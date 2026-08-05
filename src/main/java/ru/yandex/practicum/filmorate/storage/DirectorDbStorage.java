@@ -41,7 +41,6 @@ public class DirectorDbStorage implements DirectorStorage {
                 .orElseThrow(() -> new NotFoundException("Режиссер с id=" + id + " не найден"));
     }
 
-
     @Override
     public Director addDirector(Director director) {
         log.debug("Создание нового режиссера в БД: name={}", director.getName());
@@ -54,7 +53,7 @@ public class DirectorDbStorage implements DirectorStorage {
             return ps;
         }, keyHolder);
 
-        director.setId(keyHolder.getKey().longValue());
+        director.setId(keyHolder.getKey().intValue());
         log.info("Режиссер создан в БД: id={}, name={}", director.getId(), director.getName());
         return director;
     }
@@ -79,6 +78,13 @@ public class DirectorDbStorage implements DirectorStorage {
         jdbcTemplate.update(sql, id);
     }
 
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM directors WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
+    }
+
     public Optional<Director> findDirectorById(long id) {
         String sql = "SELECT * FROM directors WHERE id = ?";
         List<Director> directors = jdbcTemplate.query(sql, this::mapRowToDirector, id);
@@ -91,12 +97,12 @@ public class DirectorDbStorage implements DirectorStorage {
 
     private Director mapRowToDirector(ResultSet rs, int rowNum) throws SQLException {
         Director director = new Director();
-        director.setId(rs.getLong("id"));
+        director.setId(rs.getInt("id"));
         director.setName(rs.getString("name"));
         return director;
     }
 
-    private void checkDirectorExists(Long id) {
+    private void checkDirectorExists(int id) {
         String sql = "SELECT COUNT(*) FROM directors WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
         if (count == null || count == 0) {
