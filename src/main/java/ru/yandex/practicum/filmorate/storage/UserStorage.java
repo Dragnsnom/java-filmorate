@@ -23,4 +23,3 @@ public interface UserStorage {
 
     void deleteUser(Long id);
 }
-

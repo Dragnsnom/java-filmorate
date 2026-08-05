@@ -57,6 +57,18 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.debug("Запрос общих фильмов: userId={}, friendId={}", userId, friendId);
+        List<Film> commonFilms = films.values().stream()
+                .filter(film -> film.getLikes().contains(userId) && film.getLikes().contains(friendId))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .toList();
+
+        log.debug("Найдено общих фильмов: {}", commonFilms.size());
+        return commonFilms;
+    }
+
+    @Override
     public void addLike(Film film, User user) {
         log.debug("Добавление лайка: film={}, user={}", film.getId(), user.getId());
 
@@ -102,6 +114,25 @@ public class InMemoryFilmStorage implements FilmStorage {
         Film film = getFilm(id);
         films.remove(id);
         log.info("Фильм с id={} удален", id);
+    }
+
+    @Override
+    public List<Film> searchByTitle(String query) {
+        log.debug("Поиск фильмов по названию: query={}", query);
+
+        List<Film> found = films.values().stream()
+                .filter(film -> film.getName().toLowerCase().contains(query.toLowerCase()))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .toList();
+
+        log.debug("Найдено фильмов по запросу '{}': {}", query, found.size());
+        return found;
+    }
+
+    @Override
+    public List<Film> getRecommendations(Long userId) {
+        // Заглушка, так как рекомендации обычно требуют БД
+        return List.of();
     }
 
     private void getFilmOrThrow(Long id) {
