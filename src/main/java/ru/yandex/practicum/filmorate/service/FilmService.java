@@ -6,25 +6,32 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.EventStorage;
 import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
+import static ru.yandex.practicum.filmorate.model.OperationType.ADD;
+import static ru.yandex.practicum.filmorate.model.OperationType.REMOVE;
+
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
     private final DirectorStorage  directorStorage;
+    private final EventStorage eventStorage;
 
     public FilmService(
             @org.springframework.beans.factory.annotation.Qualifier("filmDbStorage") FilmStorage filmStorage,
             @org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage,
-            @org.springframework.beans.factory.annotation.Qualifier("directorDbStorage") DirectorStorage directorStorage) {
+            @org.springframework.beans.factory.annotation.Qualifier("directorDbStorage") DirectorStorage directorStorage,
+            EventStorage eventStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.directorStorage = directorStorage;
+        this.eventStorage = eventStorage;
     }
 
     private User getUserOrThrow(Long userId) {
@@ -53,6 +60,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.addLike(film, user);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, ADD, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -60,6 +68,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.removeLike(film, user);
+        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, REMOVE, filmId);
     }
 
     public List<Film> getPopularFilms(Long count) {
@@ -96,5 +105,18 @@ public class FilmService {
                 throw new NotFoundException("Режиссёр с id=" + director.getId() + " не найден");
             }
         }
+    }
+
+    public List<Film> searchFilms(String query, String by) {
+        List<String> criteria = List.of(by.split(","));
+        // сейчас поддерживается только поиск по названию: режиссёров в проекте нет
+        if (criteria.contains("title")) {
+            return filmStorage.searchByTitle(query);
+        }
+        return List.of();
+    }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
     }
 }

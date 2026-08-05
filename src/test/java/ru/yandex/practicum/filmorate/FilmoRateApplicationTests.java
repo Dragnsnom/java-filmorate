@@ -185,6 +185,33 @@ class FilmoRateApplicationTests {
         assertThat(popular.get(0).getId()).isEqualTo(film2.getId());
     }
 
+    @Test
+    public void testGetCommonFilms() {
+        User user1 = userStorage.create(createUser("u11@t.com", "u11"));
+        User user2 = userStorage.create(createUser("u22@t.com", "u22"));
+
+        Film film1 = filmStorage.create(createFilm("Film A"));
+        Film film2 = filmStorage.create(createFilm("Film B"));
+        Film film3 = filmStorage.create(createFilm("Film C"));
+
+        filmStorage.addLike(film1, user1);
+        filmStorage.addLike(film1, user2);
+
+        filmStorage.addLike(film2, user1);
+        filmStorage.addLike(film2, user2);
+
+        filmStorage.addLike(film3, user1);
+
+        User user3 = userStorage.create(createUser("u33@t.com", "u33"));
+        filmStorage.addLike(film2, user3);
+
+        List<Film> common = filmStorage.getCommonFilms(user1.getId(), user2.getId());
+
+        assertThat(common).hasSize(2);
+        assertThat(common.get(0).getId()).isEqualTo(film2.getId());
+        assertThat(common.get(1).getId()).isEqualTo(film1.getId());
+    }
+
     private User createUser(String email, String login) {
         User user = new User();
         user.setEmail(email);

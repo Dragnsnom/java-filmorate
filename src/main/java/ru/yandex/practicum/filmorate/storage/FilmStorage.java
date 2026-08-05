@@ -15,6 +15,8 @@ public interface FilmStorage {
 
     Film getFilm(Long id);
 
+    List<Film> getCommonFilms(Long userId, Long friendId);
+
     void addLike(Film film, User user);
 
     void removeLike(Film film, User user);
@@ -22,4 +24,8 @@ public interface FilmStorage {
     List<Film> getPopularFilms(Long count);
 
     List<Film> getFilmsByDirector(int directorId, String sortBy);
+
+    List<Film> searchByTitle(String query);
+
+    List<Film> getRecommendations(Long userId);
 }
