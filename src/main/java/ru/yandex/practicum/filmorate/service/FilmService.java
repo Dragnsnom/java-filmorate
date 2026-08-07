@@ -79,6 +79,10 @@ public class FilmService {
         return filmStorage.getFilm(id);
     }
 
+    public void deleteFilm(Long id) {
+        filmStorage.deleteFilm(id);
+    }
+
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
         if (!directorStorage.existsById(directorId)) {
             throw new NotFoundException("Режиссёр с id=" + directorId + " не найден");
