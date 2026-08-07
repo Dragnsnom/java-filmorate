@@ -177,9 +177,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Object> args = new ArrayList<>();
 
         if (genreId != null) {
-            sql.append(
-                    "JOIN film_genres fg ON f.id = fg.film_id "
-            );
+            sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
         }
 
         sql.append("WHERE 1 = 1 ");
