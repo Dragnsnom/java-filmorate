@@ -121,6 +121,8 @@ public class InMemoryFilmStorage implements FilmStorage {
         Film film = getFilm(id);
         films.remove(id);
         log.info("Фильм с id={} удален", id);
+    }
+
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
         log.debug("Получение фильмов режиссёра: directorId={}, sortBy={}", directorId, sortBy);
 
