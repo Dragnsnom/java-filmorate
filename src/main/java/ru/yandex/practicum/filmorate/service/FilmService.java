@@ -11,13 +11,20 @@ import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ru.yandex.practicum.filmorate.model.OperationType.ADD;
 import static ru.yandex.practicum.filmorate.model.OperationType.REMOVE;
 
 @Service
 public class FilmService {
+    private static final String SEARCH_BY_TITLE = "title";
+    private static final String SEARCH_BY_DIRECTOR = "director";
+
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
     private final DirectorStorage  directorStorage;
@@ -43,6 +50,7 @@ public class FilmService {
     }
 
     public Film createFilm(Film film) {
+        validateDirectors(film);
         return filmStorage.create(film);
     }
 
@@ -108,12 +116,27 @@ public class FilmService {
     }
 
     public List<Film> searchFilms(String query, String by) {
-        List<String> criteria = List.of(by.split(","));
-        // сейчас поддерживается только поиск по названию: режиссёров в проекте нет
-        if (criteria.contains("title")) {
-            return filmStorage.searchByTitle(query);
+        if (query == null || by == null) {
+            throw new ValidationException("Параметры query и by обязательны");
         }
-        return List.of();
+
+        Set<String> criteria = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .filter(criterion -> !criterion.isEmpty())
+                .collect(Collectors.toSet());
+
+        Set<String> unknown = new HashSet<>(criteria);
+        unknown.removeAll(Set.of(SEARCH_BY_TITLE, SEARCH_BY_DIRECTOR));
+        if (!unknown.isEmpty()) {
+            throw new ValidationException("Параметр by может принимать значения "
+                    + SEARCH_BY_TITLE + " и " + SEARCH_BY_DIRECTOR + ", получено: " + by);
+        }
+
+        return filmStorage.searchFilms(
+                query,
+                criteria.contains(SEARCH_BY_TITLE),
+                criteria.contains(SEARCH_BY_DIRECTOR));
     }
 
     public List<Film> getCommonFilms(Long userId, Long friendId) {

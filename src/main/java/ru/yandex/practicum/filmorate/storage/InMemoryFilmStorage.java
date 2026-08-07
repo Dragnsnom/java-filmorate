@@ -142,16 +142,38 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> searchByTitle(String query) {
-        log.debug("Поиск фильмов по названию: query={}", query);
+    public List<Film> searchFilms(String query, boolean byTitle, boolean byDirector) {
+        log.debug("Поиск фильмов: query={}, byTitle={}, byDirector={}", query, byTitle, byDirector);
+
+        if (!byTitle && !byDirector) {
+            return List.of();
+        }
+
+        String pattern = query.toLowerCase();
 
         List<Film> found = films.values().stream()
-                .filter(film -> film.getName().toLowerCase().contains(query.toLowerCase()))
-                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .filter(film -> (byTitle && matchesTitle(film, pattern))
+                        || (byDirector && matchesDirector(film, pattern)))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed()
+                        .thenComparing(Film::getId))
                 .toList();
 
         log.debug("Найдено фильмов по запросу '{}': {}", query, found.size());
         return found;
+    }
+
+    private boolean matchesTitle(Film film, String pattern) {
+        return film.getName() != null && film.getName().toLowerCase().contains(pattern);
+    }
+
+    private boolean matchesDirector(Film film, String pattern) {
+        if (film.getDirectors() == null) {
+            return false;
+        }
+        return film.getDirectors().stream()
+                .anyMatch(director -> director != null
+                        && director.getName() != null
+                        && director.getName().toLowerCase().contains(pattern));
     }
 
     @Override
@@ -164,4 +186,4 @@ public class InMemoryFilmStorage implements FilmStorage {
         Optional.ofNullable(films.get(id))
                 .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
     }
-}
+}
