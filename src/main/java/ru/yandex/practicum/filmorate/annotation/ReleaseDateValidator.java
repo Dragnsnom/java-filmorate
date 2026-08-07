@@ -13,6 +13,6 @@ public class ReleaseDateValidator implements ConstraintValidator<ValidReleaseDat
         if (releaseDate == null) {
             return true;
         }
-        return !releaseDate.isBefore(MIN_RELEASE_DATE) && releaseDate.isBefore(LocalDate.now().plusDays(1));
+        return !releaseDate.isBefore(MIN_RELEASE_DATE);
     }
 }

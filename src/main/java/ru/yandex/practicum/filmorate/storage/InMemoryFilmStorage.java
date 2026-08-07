@@ -110,6 +110,38 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        log.debug("Получение фильмов режиссёра: directorId={}, sortBy={}", directorId, sortBy);
+
+        Comparator<Film> comparator;
+
+        if ("year".equals(sortBy)) {
+            comparator = Comparator
+                    .comparing(Film::getReleaseDate)
+                    .thenComparing(Film::getId);
+        } else if ("likes".equals(sortBy)) {
+            comparator = Comparator
+                    .comparingInt(Film::getLikesCount)
+                    .reversed()
+                    .thenComparing(Film::getId);
+        } else {
+            throw new IllegalArgumentException("Параметр sortBy должен иметь значение year или likes");
+        }
+
+        List<Film> result = films.values().stream()
+                .filter(film -> film.getDirectors() != null)
+                .filter(film -> film.getDirectors().stream()
+                        .anyMatch(director -> director != null
+                                && director.getId() == directorId))
+                .sorted(comparator)
+                .toList();
+
+        log.debug("Для режиссёра id={} найдено фильмов: {}", directorId, result.size());
+
+        return result;
+    }
+
+    @Override
     public List<Film> searchByTitle(String query) {
         log.debug("Поиск фильмов по названию: query={}", query);
 
