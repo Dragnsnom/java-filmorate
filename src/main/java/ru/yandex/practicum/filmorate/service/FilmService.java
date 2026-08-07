@@ -71,8 +71,8 @@ public class FilmService {
         eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, REMOVE, filmId);
     }
 
-    public List<Film> getPopularFilms(Long count) {
-       return filmStorage.getPopularFilms(count);
+    public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
+       return filmStorage.getPopularFilms(count, genreId, year);
     }
 
     public Film getFilm(Long id) {
