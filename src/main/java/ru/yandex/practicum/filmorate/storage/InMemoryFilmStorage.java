@@ -97,15 +97,22 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopularFilms(Long count) {
-        log.debug("Запрос популярных фильмов: count={}", count);
+    public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
+        log.debug("Запрос популярных фильмов: count={}, genreId={}, year={}", count, genreId, year);
 
         List<Film> popularFilms = films.values().stream()
-                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .filter(film -> genreId == null || film.getGenres().stream()
+                        .anyMatch(genre -> genre.getId() == genreId))
+                .filter(film -> year == null || film.getReleaseDate().getYear() == year)
+                .sorted(Comparator.comparingInt(Film::getLikesCount)
+                                .reversed()
+                                .thenComparing(Film::getId)
+                )
                 .limit(count)
                 .toList();
 
         log.debug("Найдено популярных фильмов: {}", popularFilms.size());
+
         return popularFilms;
     }
 
@@ -114,6 +121,35 @@ public class InMemoryFilmStorage implements FilmStorage {
         Film film = getFilm(id);
         films.remove(id);
         log.info("Фильм с id={} удален", id);
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        log.debug("Получение фильмов режиссёра: directorId={}, sortBy={}", directorId, sortBy);
+
+        Comparator<Film> comparator;
+
+        if ("year".equals(sortBy)) {
+            comparator = Comparator
+                    .comparing(Film::getReleaseDate)
+                    .thenComparing(Film::getId);
+        } else if ("likes".equals(sortBy)) {
+            comparator = Comparator
+                    .comparingInt(Film::getLikesCount)
+                    .reversed()
+                    .thenComparing(Film::getId);
+        } else {
+            throw new IllegalArgumentException("Параметр sortBy должен иметь значение year или likes");
+        }
+
+        List<Film> result = films.values().stream()
+                .filter(film -> film.getDirectors() != null)
+                .filter(film -> film.getDirectors().stream()
+                        .anyMatch(director -> director != null
+                                && director.getId() == directorId))
+                .sorted(comparator)
+                .toList();
+
+        log.debug("Для режиссёра id={} найдено фильмов: {}", directorId, result.size());
+
+        return result;
     }
 
     @Override

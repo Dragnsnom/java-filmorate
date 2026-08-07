@@ -6,18 +6,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.*;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,12 +64,14 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    @Transactional
     public Film update(Film film) {
         log.debug("Обновление фильма в БД: id={}, name={}", film.getId(), film.getName());
         getFilm(film.getId()); // Бросит исключение, если не найден
         validateMpaAndGenres(film);
 
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? WHERE id = ?";
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? " +
+                " WHERE id = ?";
         Integer mpaId = (film.getMpa() != null) ? film.getMpa().getId() : null;
 
         jdbcTemplate.update(sql,
@@ -81,7 +83,10 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId());
 
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+        jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", film.getId());
+
         saveGenres(film);
+        saveDirectors(film);
 
         log.info("Фильм обновлен в БД: id={}, name={}", film.getId(), film.getName());
         return getFilm(film.getId());
@@ -91,7 +96,7 @@ public class FilmDbStorage implements FilmStorage {
     public List<Film> getAll() {
         log.debug("Получение всех фильмов из БД");
         String sql = "SELECT f.*, m.name AS mpa_name FROM films f " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id";
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id ";
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
         loadFilmDetails(films);
         return films;
@@ -159,16 +164,81 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopularFilms(Long count) {
-        log.debug("Запрос популярных фильмов из БД: count={}", count);
-        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
-                "FROM films f " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
-                "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+    public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
+        log.debug("Запрос популярных фильмов из БД: count={}, genreId={}, year={}", count, genreId, year);
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
+                        "FROM films f " +
+                        "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
+                        "LEFT JOIN film_likes fl ON f.id = fl.film_id "
+        );
+
+        List<Object> args = new ArrayList<>();
+
+        if (genreId != null) {
+            sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
+        }
+
+        sql.append("WHERE 1 = 1 ");
+
+        if (genreId != null) {
+            sql.append("AND fg.genre_id = ? ");
+            args.add(genreId);
+        }
+
+        if (year != null) {
+            sql.append("AND YEAR(f.release_date) = ? ");
+            args.add(year);
+        }
+
+        sql.append(
                 "GROUP BY f.id, m.name " +
-                "ORDER BY like_count DESC, f.id ASC " +
-                "LIMIT ?";
-        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
+                        "ORDER BY like_count DESC, f.id ASC " +
+                        "LIMIT ?"
+        );
+
+        args.add(count);
+
+        List<Film> films = jdbcTemplate.query(
+                sql.toString(),
+                this::mapRowToFilm,
+                args.toArray()
+        );
+
+        loadFilmDetails(films);
+
+        return films;
+    }
+
+    @Override
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        log.debug("Получение фильмов режиссёра с id={}, сортировка={}", directorId, sortBy);
+
+        String orderBy;
+
+        if ("year".equals(sortBy)) {
+            orderBy = "f.release_date ASC, f.id ASC";
+        } else if ("likes".equals(sortBy)) {
+            orderBy = "likes_count DESC, f.id ASC";
+        } else {
+            throw new ValidationException("Параметр sortBy должен иметь значение year или likes");
+        }
+
+        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS likes_count " + "FROM films f " +
+                "JOIN film_directors fd ON fd.film_id = f.id " +
+                "LEFT JOIN mpa_ratings m ON m.id = f.mpa_rating_id " +
+                "LEFT JOIN film_likes fl ON fl.film_id = f.id " +
+                "WHERE fd.director_id = ? " +
+                "GROUP BY f.id, " +
+                "f.name, " +
+                "f.description, " +
+                "f.release_date, " +
+                "f.duration, " +
+                "f.mpa_rating_id, " +
+                "m.name ORDER BY " + orderBy;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
         loadFilmDetails(films);
         return films;
     }
@@ -246,6 +316,23 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.batchUpdate(sql, batchArgs);
     }
 
+    private void saveDirectors(Film film) {
+        if (film.getDirectors() == null || film.getDirectors().isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
+
+        List<Object[]> batchArgs = film.getDirectors().stream()
+                .map(director -> new Object[]{
+                        film.getId(),
+                        director.getId()
+                })
+                .toList();
+
+        jdbcTemplate.batchUpdate(sql, batchArgs);
+    }
+
     private void loadFilmDetails(Film film) {
         loadFilmDetails(List.of(film));
     }
@@ -258,6 +345,7 @@ public class FilmDbStorage implements FilmStorage {
         for (Film film : films) {
             film.setGenres(new LinkedHashSet<>());
             film.setLikes(new HashSet<>());
+            film.setDirectors(new LinkedHashSet<>());
         }
 
         List<Long> filmIds = films.stream().map(Film::getId).toList();
@@ -290,6 +378,22 @@ public class FilmDbStorage implements FilmStorage {
                 film.getLikes().add(rs.getLong("user_id"));
             }
         }, args);
+
+        String directorsSql = "SELECT fd.film_id, d.id AS director_id, d.name AS director_name " +
+                "FROM film_directors fd JOIN directors d ON d.id = fd.director_id " +
+                "WHERE fd.film_id IN (" + inPlaceholders + ") ORDER BY fd.film_id, d.id";
+        jdbcTemplate.query(directorsSql, rs -> {
+            long filmId = rs.getLong("film_id");
+            Film film = filmMap.get(filmId);
+
+            if (film != null) {
+                film.getDirectors().add(new Director(
+                        rs.getInt("director_id"),
+                        rs.getString("director_name")
+                ));
+            }
+        }, args);
+
     }
 
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {

@@ -183,7 +183,7 @@ class FilmorateServiceTests {
 		filmService.addLike(film2.getId(), user1.getId());
 		filmService.addLike(film3.getId(), user1.getId());
 
-		List<Film> popularFilms = filmService.getPopularFilms(2L);
+		List<Film> popularFilms = filmService.getPopularFilms(2L, null, null);
 		assertEquals(2, popularFilms.size());
 		assertEquals(film1.getId(), popularFilms.get(0).getId());
 		assertEquals(film2.getId(), popularFilms.get(1).getId());
@@ -198,7 +198,7 @@ class FilmorateServiceTests {
 		filmService.addLike(film1.getId(), user1.getId());
 		Film film2 = filmService.createFilm(testFilm2);
 
-		List<Film> popularFilms = filmService.getPopularFilms(5L);
+		List<Film> popularFilms = filmService.getPopularFilms(5L, null, null);
 		assertEquals(2, popularFilms.size());
 	}
 
