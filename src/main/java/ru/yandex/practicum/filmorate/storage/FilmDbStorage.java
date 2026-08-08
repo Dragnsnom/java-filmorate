@@ -165,17 +165,50 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopularFilms(Long count) {
-        log.debug("Запрос популярных фильмов из БД: count={}", count);
-        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
-                "FROM films f " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
-                "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+    public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
+        log.debug("Запрос популярных фильмов из БД: count={}, genreId={}, year={}", count, genreId, year);
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
+                        "FROM films f " +
+                        "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
+                        "LEFT JOIN film_likes fl ON f.id = fl.film_id "
+        );
+
+        List<Object> args = new ArrayList<>();
+
+        if (genreId != null) {
+            sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
+        }
+
+        sql.append("WHERE 1 = 1 ");
+
+        if (genreId != null) {
+            sql.append("AND fg.genre_id = ? ");
+            args.add(genreId);
+        }
+
+        if (year != null) {
+            sql.append("AND YEAR(f.release_date) = ? ");
+            args.add(year);
+        }
+
+        sql.append(
                 "GROUP BY f.id, m.name " +
-                "ORDER BY like_count DESC, f.id ASC " +
-                "LIMIT ?";
-        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, count);
+                        "ORDER BY like_count DESC, f.id ASC " +
+                        "LIMIT ?"
+        );
+
+        args.add(count);
+
+        List<Film> films = jdbcTemplate.query(
+                sql.toString(),
+                this::mapRowToFilm,
+                args.toArray()
+        );
+
         loadFilmDetails(films);
+
         return films;
     }
 
@@ -276,6 +309,17 @@ public class FilmDbStorage implements FilmStorage {
         loadFilmDetails(recommendations);
 
         return recommendations;
+    }
+
+    @Override
+    public void deleteFilm(Long id) {
+        log.debug("Удаление фильма filmId={}", id);
+        String sql = "DELETE FROM films WHERE id = ?";
+
+        Film film = getFilm(id);
+
+        jdbcTemplate.update(sql, id);
+        log.debug("Фильм filmId={} удален", id);
     }
 
     private void saveGenres(Film film) {

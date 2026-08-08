@@ -63,6 +63,10 @@ public class UserService {
         return userStorage.getCommonFriends(id, otherId);
     }
 
+    public void deleteUser(Long id) {
+        userStorage.deleteUser(id);
+    }
+
     public List<Event> getFeed(Long id) {
         userStorage.getUser(id);
         return eventStorage.getEventsByUserId(id);

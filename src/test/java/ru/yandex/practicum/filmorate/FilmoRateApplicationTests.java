@@ -183,7 +183,7 @@ class FilmoRateApplicationTests {
 
         filmStorage.addLike(film2, user);
 
-        List<Film> popular = filmStorage.getPopularFilms(2L);
+        List<Film> popular = filmStorage.getPopularFilms(2L, null, null);
         assertThat(popular).hasSize(2);
         assertThat(popular.get(0).getId()).isEqualTo(film2.getId());
     }
