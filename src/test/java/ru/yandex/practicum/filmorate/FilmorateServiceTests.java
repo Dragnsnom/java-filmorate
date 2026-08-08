@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.OperationType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -180,7 +182,7 @@ class FilmorateServiceTests {
 		filmService.addLike(film2.getId(), user1.getId());
 		filmService.addLike(film3.getId(), user1.getId());
 
-		List<Film> popularFilms = filmService.getPopularFilms(2L);
+		List<Film> popularFilms = filmService.getPopularFilms(2L, null, null);
 		assertEquals(2, popularFilms.size());
 		assertEquals(film1.getId(), popularFilms.get(0).getId());
 		assertEquals(film2.getId(), popularFilms.get(1).getId());
@@ -195,7 +197,7 @@ class FilmorateServiceTests {
 		filmService.addLike(film1.getId(), user1.getId());
 		Film film2 = filmService.createFilm(testFilm2);
 
-		List<Film> popularFilms = filmService.getPopularFilms(5L);
+		List<Film> popularFilms = filmService.getPopularFilms(5L, null, null);
 		assertEquals(2, popularFilms.size());
 	}
 
@@ -229,7 +231,7 @@ class FilmorateServiceTests {
 		Film createdFilm = filmService.createFilm(testFilm1);
 
 		filmService.addLike(createdFilm.getId(), createdUser.getId());
-		assertThrows(DuplicateLikeException.class, () ->
+		assertDoesNotThrow(() ->
 				filmService.addLike(createdFilm.getId(), createdUser.getId())
 		);
 	}
@@ -320,5 +322,126 @@ class FilmorateServiceTests {
 		assertEquals(1, film.getLikes().size());
 		assertTrue(film.getLikes().contains(user2.getId()));
 		assertFalse(film.getLikes().contains(user1.getId()));
+	}
+
+	@Test
+	void shouldRecordEventWhenAddingFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+
+		List<Event> feed = userService.getFeed(createdUser1.getId());
+		assertEquals(1, feed.size());
+
+		Event event = feed.getFirst();
+		assertEquals(createdUser1.getId(), event.getUserId());
+		assertEquals(EventType.FRIEND, event.getEventType());
+		assertEquals(OperationType.ADD, event.getOperation());
+		assertEquals(createdUser2.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenDeletingFriend() {
+		User createdUser1 = userService.createUser(testUser1);
+		User createdUser2 = userService.createUser(testUser2);
+
+		userService.addFriend(createdUser1.getId(), createdUser2.getId());
+		userService.deleteFriend(createdUser1.getId(), createdUser2.getId());
+
+		List<Event> feed = userService.getFeed(createdUser1.getId());
+		assertEquals(2, feed.size());
+
+		Event event = feed.get(1);
+		assertEquals(createdUser1.getId(), event.getUserId());
+		assertEquals(EventType.FRIEND, event.getEventType());
+		assertEquals(OperationType.REMOVE, event.getOperation());
+		assertEquals(createdUser2.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenAddingLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
+
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+
+		List<Event> feed = userService.getFeed(createdUser.getId());
+		assertEquals(1, feed.size());
+
+		Event event = feed.getFirst();
+		assertEquals(createdUser.getId(), event.getUserId());
+		assertEquals(EventType.LIKE, event.getEventType());
+		assertEquals(OperationType.ADD, event.getOperation());
+		assertEquals(createdFilm.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldRecordEventWhenRemovingLike() {
+		User createdUser = userService.createUser(testUser1);
+		Film createdFilm = filmService.createFilm(testFilm1);
+
+		filmService.addLike(createdFilm.getId(), createdUser.getId());
+		filmService.removeLike(createdFilm.getId(), createdUser.getId());
+
+		List<Event> feed = userService.getFeed(createdUser.getId());
+		assertEquals(2, feed.size());
+
+		Event event = feed.get(1);
+		assertEquals(createdUser.getId(), event.getUserId());
+		assertEquals(EventType.LIKE, event.getEventType());
+		assertEquals(OperationType.REMOVE, event.getOperation());
+		assertEquals(createdFilm.getId(), event.getEntityId());
+	}
+
+	@Test
+	void shouldGetRecommendations() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+		User user3 = userService.createUser(testUser3);
+
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
+		Film film3 = filmService.createFilm(testFilm3);
+
+		filmService.addLike(film1.getId(), user1.getId());
+		filmService.addLike(film2.getId(), user1.getId());
+		filmService.addLike(film1.getId(), user2.getId());
+		filmService.addLike(film2.getId(), user2.getId());
+		filmService.addLike(film3.getId(), user2.getId());
+		filmService.addLike(film1.getId(), user3.getId());
+		filmService.addLike(film3.getId(), user3.getId());
+
+		List<Film> recommendations = userService.getRecommendations(user1.getId());
+		assertEquals(1, recommendations.size());
+		assertEquals(film3.getId(), recommendations.get(0).getId());
+
+		List<Film> recommendationsUser2 = userService.getRecommendations(user2.getId());
+		assertTrue(recommendationsUser2.isEmpty());
+	}
+
+	@Test
+	void shouldGetCommonFilms() {
+		User user1 = userService.createUser(testUser1);
+		User user2 = userService.createUser(testUser2);
+
+		Film film1 = filmService.createFilm(testFilm1);
+		Film film2 = filmService.createFilm(testFilm2);
+		Film film3 = filmService.createFilm(testFilm3);
+
+		filmService.addLike(film1.getId(), user1.getId());
+		filmService.addLike(film1.getId(), user2.getId());
+
+		filmService.addLike(film2.getId(), user1.getId());
+		filmService.addLike(film2.getId(), user2.getId());
+
+		filmService.addLike(film3.getId(), user1.getId());
+
+		List<Film> common = filmService.getCommonFilms(user1.getId(), user2.getId());
+
+		assertEquals(2, common.size());
+		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film1.getId())));
+		assertTrue(common.stream().anyMatch(f -> f.getId().equals(film2.getId())));
+		assertFalse(common.stream().anyMatch(f -> f.getId().equals(film3.getId())));
 	}
 }

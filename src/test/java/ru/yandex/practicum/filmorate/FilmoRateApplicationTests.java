@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
@@ -23,10 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({UserDbStorage.class, FilmDbStorage.class})
+@Import({UserDbStorage.class, FilmDbStorage.class, DirectorDbStorage.class})
 class FilmoRateApplicationTests {
     private final UserDbStorage userStorage;
     private final FilmDbStorage filmStorage;
+    private final DirectorDbStorage directorStorage;
 
     @Test
     public void testFindUserById() {
@@ -180,9 +183,100 @@ class FilmoRateApplicationTests {
 
         filmStorage.addLike(film2, user);
 
-        List<Film> popular = filmStorage.getPopularFilms(2L);
+        List<Film> popular = filmStorage.getPopularFilms(2L, null, null);
         assertThat(popular).hasSize(2);
         assertThat(popular.get(0).getId()).isEqualTo(film2.getId());
+    }
+
+    @Test
+    public void testGetCommonFilms() {
+        User user1 = userStorage.create(createUser("u11@t.com", "u11"));
+        User user2 = userStorage.create(createUser("u22@t.com", "u22"));
+
+        Film film1 = filmStorage.create(createFilm("Film A"));
+        Film film2 = filmStorage.create(createFilm("Film B"));
+        Film film3 = filmStorage.create(createFilm("Film C"));
+
+        filmStorage.addLike(film1, user1);
+        filmStorage.addLike(film1, user2);
+
+        filmStorage.addLike(film2, user1);
+        filmStorage.addLike(film2, user2);
+
+        filmStorage.addLike(film3, user1);
+
+        User user3 = userStorage.create(createUser("u33@t.com", "u33"));
+        filmStorage.addLike(film2, user3);
+
+        List<Film> common = filmStorage.getCommonFilms(user1.getId(), user2.getId());
+
+        assertThat(common).hasSize(2);
+        assertThat(common.get(0).getId()).isEqualTo(film2.getId());
+        assertThat(common.get(1).getId()).isEqualTo(film1.getId());
+    }
+
+    @Test
+    public void testSearchByTitleIsCaseInsensitiveAndPartial() {
+        filmStorage.create(createFilm("Крадущийся тигр, затаившийся дракон"));
+        filmStorage.create(createFilm("Крадущийся в ночи"));
+        filmStorage.create(createFilm("Полёт над гнездом кукушки"));
+
+        List<Film> found = filmStorage.searchFilms("КРАД", true, false);
+
+        assertThat(found).hasSize(2);
+        assertThat(found).extracting(Film::getName)
+                .allMatch(name -> name.toLowerCase().contains("крад"));
+    }
+
+    @Test
+    public void testSearchByDirector() {
+        Director tarantino = directorStorage.addDirector(new Director(0, "Квентин Тарантино"));
+        Director nolan = directorStorage.addDirector(new Director(0, "Кристофер Нолан"));
+
+        Film pulpFiction = createFilm("Криминальное чтиво");
+        pulpFiction.setDirectors(new LinkedHashSet<>(List.of(tarantino)));
+        pulpFiction = filmStorage.create(pulpFiction);
+
+        Film inception = createFilm("Начало");
+        inception.setDirectors(new LinkedHashSet<>(List.of(nolan)));
+        filmStorage.create(inception);
+
+        List<Film> found = filmStorage.searchFilms("тарантино", false, true);
+
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getId()).isEqualTo(pulpFiction.getId());
+    }
+
+    @Test
+    public void testSearchByTitleAndDirectorSortedByPopularity() {
+        Director director = directorStorage.addDirector(new Director(0, "Гай Ричи"));
+
+        Film byTitle = filmStorage.create(createFilm("Ричи Рич"));
+
+        Film byDirector = createFilm("Карты, деньги, два ствола");
+        byDirector.setDirectors(new LinkedHashSet<>(List.of(director)));
+        byDirector = filmStorage.create(byDirector);
+
+        filmStorage.create(createFilm("Посторонний фильм"));
+
+        User user1 = userStorage.create(createUser("s1@t.com", "s1"));
+        User user2 = userStorage.create(createUser("s2@t.com", "s2"));
+        filmStorage.addLike(byDirector, user1);
+        filmStorage.addLike(byDirector, user2);
+        filmStorage.addLike(byTitle, user1);
+
+        List<Film> found = filmStorage.searchFilms("ричи", true, true);
+
+        assertThat(found).hasSize(2);
+        assertThat(found.get(0).getId()).isEqualTo(byDirector.getId());
+        assertThat(found.get(1).getId()).isEqualTo(byTitle.getId());
+    }
+
+    @Test
+    public void testSearchWithoutCriteriaReturnsEmptyList() {
+        filmStorage.create(createFilm("Крадущийся в ночи"));
+
+        assertThat(filmStorage.searchFilms("крад", false, false)).isEmpty();
     }
 
     private User createUser(String email, String login) {
