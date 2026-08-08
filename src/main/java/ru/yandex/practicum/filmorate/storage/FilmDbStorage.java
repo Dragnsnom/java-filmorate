@@ -58,6 +58,7 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().longValue());
         saveGenres(film);
+        saveDirectors(film);
 
         log.info("Фильм создан в БД: id={}, name={}", film.getId(), film.getName());
         return getFilm(film.getId());
@@ -244,17 +245,39 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> searchByTitle(String query) {
-        log.debug("Поиск фильмов по названию в БД: query={}", query);
-        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(fl.user_id) AS like_count " +
+    public List<Film> searchFilms(String query, boolean byTitle, boolean byDirector) {
+        log.debug("Поиск фильмов в БД: query={}, byTitle={}, byDirector={}", query, byTitle, byDirector);
+
+        if (!byTitle && !byDirector) {
+            return List.of();
+        }
+
+        String pattern = "%" + query.toLowerCase() + "%";
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (byTitle) {
+            conditions.add("LOWER(f.name) LIKE ?");
+            params.add(pattern);
+        }
+        if (byDirector) {
+            conditions.add("LOWER(d.name) LIKE ?");
+            params.add(pattern);
+        }
+
+        String sql = "SELECT f.*, m.name AS mpa_name, COUNT(DISTINCT fl.user_id) AS like_count " +
                 "FROM films f " +
                 "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.id " +
                 "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
-                "WHERE LOWER(f.name) LIKE LOWER(?) " +
+                "LEFT JOIN film_directors fd ON fd.film_id = f.id " +
+                "LEFT JOIN directors d ON d.id = fd.director_id " +
+                "WHERE " + String.join(" OR ", conditions) + " " +
                 "GROUP BY f.id, m.name " +
                 "ORDER BY like_count DESC, f.id ASC";
-        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, "%" + query + "%");
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, params.toArray());
         loadFilmDetails(films);
+        log.debug("Найдено фильмов по запросу '{}': {}", query, films.size());
         return films;
     }
 
