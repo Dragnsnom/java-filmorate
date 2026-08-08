@@ -67,8 +67,10 @@ public class FilmService {
         User user = getUserOrThrow(userId);
         Film film = getFilmOrThrow(filmId);
 
-        filmStorage.addLike(film, user);
-        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, ADD, filmId);
+        boolean added = filmStorage.addLike(film, user);
+        if (added) {
+            eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, ADD, filmId);
+        }
     }
 
     public void removeLike(Long filmId, Long userId) {

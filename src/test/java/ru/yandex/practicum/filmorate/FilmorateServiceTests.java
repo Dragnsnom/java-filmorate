@@ -232,7 +232,7 @@ class FilmorateServiceTests {
 		Film createdFilm = filmService.createFilm(testFilm1);
 
 		filmService.addLike(createdFilm.getId(), createdUser.getId());
-		assertThrows(DuplicateLikeException.class, () ->
+		assertDoesNotThrow(() ->
 				filmService.addLike(createdFilm.getId(), createdUser.getId())
 		);
 	}

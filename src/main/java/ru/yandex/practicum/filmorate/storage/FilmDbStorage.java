@@ -7,7 +7,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.*;
@@ -137,17 +136,18 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(Film film, User user) {
+    public boolean addLike(Film film, User user) {
         log.debug("Добавление лайка в БД: filmId={}, userId={}", film.getId(), user.getId());
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, film.getId(), user.getId());
         if (count != null && count > 0) {
-            throw new DuplicateLikeException("Пользователь уже поставил лайк этому фильму");
+            log.debug("Лайк уже существует: filmId={}, userId={}", film.getId(), user.getId());
+            return false;
         }
-
         String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, film.getId(), user.getId());
         log.info("Лайк добавлен в БД: filmId={}, userId={}", film.getId(), user.getId());
+        return true;
     }
 
     @Override

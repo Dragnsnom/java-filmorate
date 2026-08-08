@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
@@ -69,17 +68,18 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(Film film, User user) {
+    public boolean addLike(Film film, User user) {
         log.debug("Добавление лайка: film={}, user={}", film.getId(), user.getId());
 
         if (film.getLikes().contains(user.getId())) {
-            log.warn("Пользователь {} уже поставил лайк фильму {}", user.getId(), film.getId());
-            throw new DuplicateLikeException("Пользователь уже поставил лайк этому фильму");
+            log.debug("Пользователь {} уже поставил лайк фильму {}", user.getId(), film.getId());
+            return false;
         }
 
         film.addLike(user.getId());
         log.info("Лайк добавлен: filmId={}, userId={}, всего лайков={}",
                 film.getId(), user.getId(), film.getLikes().size());
+        return true;
     }
 
     @Override
