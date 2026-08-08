@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -141,7 +145,7 @@ public class FilmDbStorage implements FilmStorage {
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, film.getId(), user.getId());
         if (count != null && count > 0) {
-            log.debug("Лайк уже существует: filmId={}, userId={}", film.getId(), user.getId());
+            log.info("Лайк уже существует: filmId={}, userId={}", film.getId(), user.getId());
             return false;
         }
         String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";

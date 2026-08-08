@@ -51,14 +51,13 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Review update(Review review) {
         log.debug("Обновление отзыва в БД: id={}", review.getReviewId());
-        getById(review.getReviewId());
+        checkReviewExists(review.getReviewId());
 
         String sql = "UPDATE reviews SET content = ?, is_positive = ? WHERE id = ?";
         jdbcTemplate.update(sql,
                 review.getContent(),
                 review.getIsPositive(),
                 review.getReviewId());
-
         log.info("Отзыв обновлён в БД: id={}", review.getReviewId());
         return getById(review.getReviewId());
     }
@@ -66,7 +65,7 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public void delete(Long id) {
         log.debug("Удаление отзыва из БД: id={}", id);
-        getById(id);
+        checkReviewExists(id);
         jdbcTemplate.update("DELETE FROM reviews WHERE id = ?", id);
         log.info("Отзыв удалён из БД: id={}", id);
     }
@@ -122,7 +121,7 @@ public class ReviewDbStorage implements ReviewStorage {
     }
 
     private void setEstimation(Long reviewId, Long userId, boolean isUseful) {
-        getById(reviewId);
+        checkReviewExists(reviewId);
         checkUserExists(userId);
 
         String sql = "MERGE INTO review_likes (review_id, user_id, is_useful) KEY (review_id, user_id) VALUES (?, ?, ?)";
@@ -167,6 +166,13 @@ public class ReviewDbStorage implements ReviewStorage {
         Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, id);
         if (count == null || count == 0) {
             throw new NotFoundException("Пользователь с id=" + id + " не найден");
+        }
+    }
+
+    private void checkReviewExists(Long id) {
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM reviews WHERE id = ?", Integer.class, id);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Отзыв с id=" + id + " не найден");
         }
     }
 }

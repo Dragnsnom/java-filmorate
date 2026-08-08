@@ -36,7 +36,7 @@ public class DirectorDbStorage implements DirectorStorage {
 
     @Override
     public Director getDirector(Long id) {
-        log.trace("Поиск пользователя в БД по id: {}", id);
+        log.debug("Поиск режиссера в БД по id: {}", id);
         return findDirectorById(id)
                 .orElseThrow(() -> new NotFoundException("Режиссер с id=" + id + " не найден"));
     }

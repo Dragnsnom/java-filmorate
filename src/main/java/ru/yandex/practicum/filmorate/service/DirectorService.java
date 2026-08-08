@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 
@@ -16,6 +17,9 @@ public class DirectorService {
     }
 
     public Director getDirectorById(Long id) {
+        if (id <= 0) {
+            throw new ValidationException("ID должен быть положительным числом");
+        }
         return directorStorage.getDirector(id);
     }
 

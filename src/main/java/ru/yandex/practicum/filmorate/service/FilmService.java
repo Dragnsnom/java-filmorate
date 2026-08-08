@@ -1,9 +1,11 @@
 package ru.yandex.practicum.filmorate.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.EventStorage;
@@ -31,9 +33,9 @@ public class FilmService {
     private final EventStorage eventStorage;
 
     public FilmService(
-            @org.springframework.beans.factory.annotation.Qualifier("filmDbStorage") FilmStorage filmStorage,
-            @org.springframework.beans.factory.annotation.Qualifier("userDbStorage") UserStorage userStorage,
-            @org.springframework.beans.factory.annotation.Qualifier("directorDbStorage") DirectorStorage directorStorage,
+            @Qualifier("filmDbStorage") FilmStorage filmStorage,
+            @Qualifier("userDbStorage") UserStorage userStorage,
+            @Qualifier("directorDbStorage") DirectorStorage directorStorage,
             EventStorage eventStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
@@ -68,8 +70,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.addLike(film, user);
-        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, ADD, filmId);
-
+        eventStorage.addEvent(userId, EventType.LIKE, ADD, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -77,7 +78,7 @@ public class FilmService {
         Film film = getFilmOrThrow(filmId);
 
         filmStorage.removeLike(film, user);
-        eventStorage.addEvent(userId, ru.yandex.practicum.filmorate.model.EventType.LIKE, REMOVE, filmId);
+        eventStorage.addEvent(userId, EventType.LIKE, REMOVE, filmId);
     }
 
     public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
@@ -110,10 +111,6 @@ public class FilmService {
         }
 
         for (Director director : film.getDirectors()) {
-            if (director == null) {
-                throw new ValidationException("Режиссёр не может быть null");
-            }
-
             if (!directorStorage.existsById(director.getId())) {
                 throw new NotFoundException("Режиссёр с id=" + director.getId() + " не найден");
             }
