@@ -30,7 +30,6 @@ public class User {
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
-
     public void setName(String name) {
         if (!StringUtils.hasText(name)) {
             this.name = this.login;

@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.DuplicateLikeException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
@@ -57,17 +56,30 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(Film film, User user) {
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.debug("Запрос общих фильмов: userId={}, friendId={}", userId, friendId);
+        List<Film> commonFilms = films.values().stream()
+                .filter(film -> film.getLikes().contains(userId) && film.getLikes().contains(friendId))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .toList();
+
+        log.debug("Найдено общих фильмов: {}", commonFilms.size());
+        return commonFilms;
+    }
+
+    @Override
+    public boolean addLike(Film film, User user) {
         log.debug("Добавление лайка: film={}, user={}", film.getId(), user.getId());
 
         if (film.getLikes().contains(user.getId())) {
-            log.warn("Пользователь {} уже поставил лайк фильму {}", user.getId(), film.getId());
-            throw new DuplicateLikeException("Пользователь уже поставил лайк этому фильму");
+            log.debug("Пользователь {} уже поставил лайк фильму {}", user.getId(), film.getId());
+            return false;
         }
 
         film.addLike(user.getId());
         log.info("Лайк добавлен: filmId={}, userId={}, всего лайков={}",
                 film.getId(), user.getId(), film.getLikes().size());
+        return true;
     }
 
     @Override
@@ -85,16 +97,102 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopularFilms(Long count) {
-        log.debug("Запрос популярных фильмов: count={}", count);
+    public List<Film> getPopularFilms(Long count, Integer genreId, Integer year) {
+        log.debug("Запрос популярных фильмов: count={}, genreId={}, year={}", count, genreId, year);
 
         List<Film> popularFilms = films.values().stream()
-                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed())
+                .filter(film -> genreId == null || film.getGenres().stream()
+                        .anyMatch(genre -> genre.getId() == genreId))
+                .filter(film -> year == null || film.getReleaseDate().getYear() == year)
+                .sorted(Comparator.comparingInt(Film::getLikesCount)
+                                .reversed()
+                                .thenComparing(Film::getId)
+                )
                 .limit(count)
                 .toList();
 
         log.debug("Найдено популярных фильмов: {}", popularFilms.size());
+
         return popularFilms;
+    }
+
+    @Override
+    public void deleteFilm(Long id) {
+        Film film = getFilm(id);
+        films.remove(id);
+        log.info("Фильм с id={} удален", id);
+    }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        log.debug("Получение фильмов режиссёра: directorId={}, sortBy={}", directorId, sortBy);
+
+        Comparator<Film> comparator;
+
+        if ("year".equals(sortBy)) {
+            comparator = Comparator
+                    .comparing(Film::getReleaseDate)
+                    .thenComparing(Film::getId);
+        } else if ("likes".equals(sortBy)) {
+            comparator = Comparator
+                    .comparingInt(Film::getLikesCount)
+                    .reversed()
+                    .thenComparing(Film::getId);
+        } else {
+            throw new IllegalArgumentException("Параметр sortBy должен иметь значение year или likes");
+        }
+
+        List<Film> result = films.values().stream()
+                .filter(film -> film.getDirectors() != null)
+                .filter(film -> film.getDirectors().stream()
+                        .anyMatch(director -> director != null
+                                && director.getId() == directorId))
+                .sorted(comparator)
+                .toList();
+
+        log.debug("Для режиссёра id={} найдено фильмов: {}", directorId, result.size());
+
+        return result;
+    }
+
+    @Override
+    public List<Film> searchFilms(String query, boolean byTitle, boolean byDirector) {
+        log.debug("Поиск фильмов: query={}, byTitle={}, byDirector={}", query, byTitle, byDirector);
+
+        if (!byTitle && !byDirector) {
+            return List.of();
+        }
+
+        String pattern = query.toLowerCase();
+
+        List<Film> found = films.values().stream()
+                .filter(film -> (byTitle && matchesTitle(film, pattern))
+                        || (byDirector && matchesDirector(film, pattern)))
+                .sorted(Comparator.comparingInt(Film::getLikesCount).reversed()
+                        .thenComparing(Film::getId))
+                .toList();
+
+        log.debug("Найдено фильмов по запросу '{}': {}", query, found.size());
+        return found;
+    }
+
+    private boolean matchesTitle(Film film, String pattern) {
+        return film.getName() != null && film.getName().toLowerCase().contains(pattern);
+    }
+
+    private boolean matchesDirector(Film film, String pattern) {
+        if (film.getDirectors() == null) {
+            return false;
+        }
+        return film.getDirectors().stream()
+                .anyMatch(director -> director != null
+                        && director.getName() != null
+                        && director.getName().toLowerCase().contains(pattern));
+    }
+
+    @Override
+    public List<Film> getRecommendations(Long userId) {
+        // Заглушка, так как рекомендации обычно требуют БД
+        return List.of();
     }
 
     private void getFilmOrThrow(Long id) {

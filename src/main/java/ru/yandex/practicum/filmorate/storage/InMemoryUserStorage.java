@@ -111,6 +111,15 @@ public class InMemoryUserStorage implements UserStorage {
         return commonFriends;
     }
 
+    @Override
+    public void deleteUser(Long id) {
+        log.debug("Удаление пользователя: userId={}", id);
+        getAllFriends(id)
+                .forEach(user -> deleteFriend(user.getId(), id));
+        users.remove(id);
+        log.debug("Пользователь userId={} удален из системы", id);
+    }
+
     private void validateUserExists(Long id) {
         if (!users.containsKey(id)) {
             throw new NotFoundException("Пользователь с id=" + id + " не найден");

@@ -33,6 +33,8 @@ public class Film {
     @Positive(message = "Продолжительность должна быть положительной")
     private int duration;
 
+    private Set<Director> directors;
+
     public void addLike(Long userId) {
         likes.add(userId);
     }
